@@ -28,7 +28,7 @@ MATCHING_TOTAL_LINES=0
 #find $filesdir -type f | while read line;
 for line in $(find $filesdir -type f)
 do
-    MATCHING_LINES=$(cat $line | grep $searchstr | wc -l)
+    MATCHING_LINES=$(cat $line | tr ' ' '\n' | grep $searchstr | wc -l)
     #echo $MATCHING_LINES :: $line
     ((MATCHING_TOTAL_LINES+=MATCHING_LINES))
 done
