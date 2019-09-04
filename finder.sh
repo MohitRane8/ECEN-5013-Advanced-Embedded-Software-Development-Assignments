@@ -1,4 +1,6 @@
 #!/bin/bash
+# Finder script for assignment 1.
+# Author: Mohit Rane
 
 # check if number of arguments are valid
 if [ $# -ne 2 ]
@@ -8,27 +10,27 @@ then
 fi
 
 # arg 1 - path to directory
-filesdir=$1
+FILESDIR=$1
 
 # arg 2 - text string to be searched
-searchstr=$2
+SEARCHSTR=$2
 
 # check file exists and is a directory
-if [ ! -d $filesdir ]
+if [ ! -d $FILESDIR ]
 then
     echo Directory does not exist
     exit 1
 fi
 
 # find number of files in given directory
-NUM_OF_FILES=$( find $filesdir -type f | wc -l )
+NUM_OF_FILES=$( find $FILESDIR -type f | wc -l )
 
 # find total matching lines
 MATCHING_TOTAL_LINES=0
-#find $filesdir -type f | while read line;
-for line in $(find $filesdir -type f)
+#find $FILESDIR -type f | while read line;
+for line in $(find $FILESDIR -type f)
 do
-    MATCHING_LINES=$(cat $line | tr ' ' '\n' | grep $searchstr | wc -l)
+    MATCHING_LINES=$(cat $line | tr ' ' '\n' | grep $SEARCHSTR | wc -l)
     #echo $MATCHING_LINES :: $line
     ((MATCHING_TOTAL_LINES+=MATCHING_LINES))
 done

@@ -1,4 +1,6 @@
 #!/bin/bash
+# Writer script for assignment 1.
+# Author: Mohit Rane
 
 # check if number of arguments are valid
 if [ $# -ne 2 ]
@@ -8,11 +10,11 @@ then
 fi
 
 # arg 1 - path to file
-writefile=$1
+WRITEFILE=$1
 
 # arg 2 - text string to be written
-writestr=$2
+WRITESTR=$2
 
-echo $writestr >> $writefile
-git config --global user.name >> $writefile
-date >> $writefile
+echo $WRITESTR >> $WRITEFILE
+git config --global user.name >> $WRITEFILE
+date >> $WRITEFILE
