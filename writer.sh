@@ -15,6 +15,12 @@ WRITEFILE=$1
 # arg 2 - text string to be written
 WRITESTR=$2
 
+# check file exists and if not then create
+if [ ! -f $WRITEFILE ]
+then
+    touch $WRITEFILE
+fi
+
 echo $WRITESTR >> $WRITEFILE
 git config --global user.name >> $WRITEFILE
 date >> $WRITEFILE
