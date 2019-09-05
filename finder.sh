@@ -6,6 +6,9 @@
 if [ $# -ne 2 ]
 then
     echo Wrong number of arguments
+    echo Usage: ./finder.sh [1st arg] [2nd arg]
+    echo [1st arg] - path to directory
+    echo [2nd arg] - text string to be searched
     exit 1
 fi
 
@@ -15,10 +18,11 @@ FILESDIR=$1
 # arg 2 - text string to be searched
 SEARCHSTR=$2
 
-# check file exists and is a directory
+# check if directory exists
 if [ ! -d $FILESDIR ]
 then
     echo Directory does not exist
+    echo "Please pass in valid directory"
     exit 1
 fi
 
