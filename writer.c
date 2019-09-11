@@ -33,19 +33,18 @@ int main( int argc, char* argv[] )
         
         // write github user name
         fputs("MohitRane8", fp);
-        fputs("\n", fp);
 
         // write date output
-        char buffer[200];
-        // sprintf(buffer, "pwd >> %s", writefile);
-        // system(buffer);
-        // fputs("\n", fp);
+        char buffer[50];
+        sprintf(buffer, "pwd >> %s", writefile);
+        system(buffer);
+        fputs("\n", fp);
 
         sprintf(buffer, "date >> %s", writefile);
         system(buffer);
         fputs("\n", fp);
         
-        system("date >> ./asdf.txt");
+        // system("date >> ./asdf.txt");
 
         puts("Done");
 
