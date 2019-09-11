@@ -1,0 +1,4 @@
+./ct-ng show-arm-unknown-linux-gnueabi
+arm-unknown-linux-gnueabi-gcc -print-sysroot
+arm-unknown-linux-gnueabi-gcc --version
+arm-unknown-linux-gnueabi-gcc -v

@@ -1,0 +1,24 @@
+[L...]   arm-unknown-linux-gnueabi
+    Languages       : C,C++
+    OS              : linux-4.20.8
+    Binutils        : binutils-2.32
+    Compiler        : gcc-8.3.0
+    C library       : glibc-2.29
+    Debug tools     : duma-2_5_15 gdb-8.2.1 ltrace-0.7.3 strace-4.26
+    Companion libs  : expat-2.2.6 gettext-0.19.8.1 gmp-6.1.2 isl-0.20 libelf-0.8.13 libiconv-1.15 mpc-1.1.0 mpfr-4.0.2 ncurses-6.1 zlib-1.2.11
+    Companion tools :
+
+/home/mohit/x-tools/arm-unknown-linux-gnueabi/arm-unknown-linux-gnueabi/sysroot
+
+arm-unknown-linux-gnueabi-gcc (crosstool-NG 1.24.0) 8.3.0
+Copyright (C) 2018 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Using built-in specs.
+COLLECT_GCC=arm-unknown-linux-gnueabi-gcc
+COLLECT_LTO_WRAPPER=/home/mohit/x-tools/arm-unknown-linux-gnueabi/libexec/gcc/arm-unknown-linux-gnueabi/8.3.0/lto-wrapper
+Target: arm-unknown-linux-gnueabi
+Configured with: /home/mohit/crosstool-ng/.build/arm-unknown-linux-gnueabi/src/gcc/configure --build=x86_64-build_pc-linux-gnu --host=x86_64-build_pc-linux-gnu --target=arm-unknown-linux-gnueabi --prefix=/home/mohit/x-tools/arm-unknown-linux-gnueabi --with-sysroot=/home/mohit/x-tools/arm-unknown-linux-gnueabi/arm-unknown-linux-gnueabi/sysroot --enable-languages=c,c++ --with-float=soft --with-pkgversion='crosstool-NG 1.24.0' --disable-sjlj-exceptions --enable-__cxa_atexit --disable-libmudflap --disable-libgomp --disable-libssp --disable-libquadmath --disable-libquadmath-support --disable-libsanitizer --disable-libmpx --with-gmp=/home/mohit/crosstool-ng/.build/arm-unknown-linux-gnueabi/buildtools --with-mpfr=/home/mohit/crosstool-ng/.build/arm-unknown-linux-gnueabi/buildtools --with-mpc=/home/mohit/crosstool-ng/.build/arm-unknown-linux-gnueabi/buildtools --with-isl=/home/mohit/crosstool-ng/.build/arm-unknown-linux-gnueabi/buildtools --enable-lto --with-host-libstdcxx='-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm' --enable-threads=posix --enable-target-optspace --enable-plugin --enable-gold --disable-nls --disable-multilib --with-local-prefix=/home/mohit/x-tools/arm-unknown-linux-gnueabi/arm-unknown-linux-gnueabi/sysroot --enable-long-long
+Thread model: posix
+gcc version 8.3.0 (crosstool-NG 1.24.0) 
