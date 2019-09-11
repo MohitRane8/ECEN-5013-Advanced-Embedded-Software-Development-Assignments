@@ -52,7 +52,7 @@ int main( int argc, char* argv[] )
         
         // system("date >> ./asdf.txt");
 
-        puts("Done");
+        // puts("Done");
 
         fclose(fp);
         closelog();

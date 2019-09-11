@@ -1,6 +1,7 @@
 #!/bin/bash
 # Tester script for assignment 1.
 # Author: Siddhant Jajoo
+# Edited by: Mohit Rane
 
 set -e
 set -u
@@ -8,7 +9,7 @@ set -u
 NUMFILES=10
 WRITESTR=ECEN_5013_IS_AWESOME
 WRITEDIR=/tmp/ecen5013
-OUTPUTFILE=assignments/assignment1/assignment1-result.txt
+OUTPUTFILE=assignments/assignment2/assignment2result.txt
 
 
 if [ $# -lt 2 ]
@@ -47,10 +48,14 @@ fi
 # YOUR CODE BELOW: the example implementation writes only one file
 # You need to modify it to write the number of files passed as the NUMFILES parameter
 
+make
+
 for (( i=1; i<=$NUMFILES; i++ ))
 do
-	./writer.sh "$WRITEDIR/$WRITESTR$i" "$WRITESTR"
+	./writer "$WRITEDIR/$WRITESTR$i" "$WRITESTR"
 done
+
+make clean
 
 # ----------------------------------------------------
 # End of your code modifcations.  Please don't modify this line
