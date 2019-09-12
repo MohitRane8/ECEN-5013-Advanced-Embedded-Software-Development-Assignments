@@ -48,6 +48,7 @@ fi
 # YOUR CODE BELOW: the example implementation writes only one file
 # You need to modify it to write the number of files passed as the NUMFILES parameter
 
+make clean
 make
 
 for (( i=1; i<=$NUMFILES; i++ ))

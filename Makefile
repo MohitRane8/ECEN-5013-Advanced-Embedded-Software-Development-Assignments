@@ -1,17 +1,13 @@
 CC=gcc
-#CROSS_COMPILE=arm-unknown-linux-gnueabi-
-#CFLAGS=-I.
 CROSS_COMPILE=
-CFLAGS=
-DEPS =
+CFLAGS= -g -Wall -Werror
 OBJ = writer.o
 
-%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
-	#$(CC) -c -o $@ $< CROSS_COMPILE=$(CROSS) $(CFLAGS)
+%.o: %.c
+	$(CROSS_COMPILE)$(CC) -c -o $@ $< $(CFLAGS)
 
 writer: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CROSS_COMPILE)$(CC) -o $@ $^ $(CFLAGS)
 
 clean:
 	-rm -f *.o *.d

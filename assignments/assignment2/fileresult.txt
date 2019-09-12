@@ -1,1 +1,1 @@
-writer: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/l, for GNU/Linux 3.2.0, BuildID[sha1]=b4814839cd1233dc4e89cb5ec51e1c147fa9f812, not stripped
+writer: ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), dynamically linked, interpreter /lib/ld-, for GNU/Linux 4.20.8, with debug_info, not stripped
