@@ -48,6 +48,7 @@ echo -e "\nINSTALLING THE REQUIRED DEPENDENCIES FOR THE INSTALLATION\n"
 #TODO: Call a script to perform this function here or place a logic inline
 #Installing Linux Kernel
 echo -e "\nINSTALLING LINUX KERNEL\n"
+"${DIR}"/install_linux_kernel.sh "$OUTDIR"
 
 
 #TODO: Call a script to perform this function here or place a logic inline
