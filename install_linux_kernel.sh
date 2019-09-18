@@ -1,6 +1,6 @@
 # !/bin/bash
 # Script to open qemu terminal.
-# Author: Siddhant Jajoo.
+# Author: Mohit Rane.
 
 set -e
 set -u
@@ -38,6 +38,7 @@ fi
 
 #Building kernel for QEMU
 make ARCH=arm CROSS_COMPILE=arm-unknown-linux-gnueabi- mrproper
+make ARCH=arm versatile_defconfig
 make -j4 ARCH=arm CROSS_COMPILE=arm-unknown-linux-gnueabi- zImage
 make -j4 ARCH=arm CROSS_COMPILE=arm-unknown-linux-gnueabi- modules
 make ARCH=arm CROSS_COMPILE=arm-unknown-linux-gnueabi- dtbs
