@@ -63,9 +63,9 @@ echo -e "\nCOPYING WRITER EXECUTABLE, TESTER.SH AND FINDER.SH TO ${OUTDIR}/rootf
 #5e & 5f - place writer executible, finder.sh and tester.sh in rootfs/home/
 #MAKE SURE DIR EXISTS HERE
 cd $DIR
-sudo cp writer $OUTDIR/rootfs
-sudo cp finder.sh $OUTDIR/rootfs
-sudo cp tester.sh $OUTDIR/rootfs
+sudo cp writer $OUTDIR/rootfs/home
+sudo cp finder.sh $OUTDIR/rootfs/home
+sudo cp tester.sh $OUTDIR/rootfs/home
 
 
 #TODO: Call a script to perform this function here or place a logic inline
