@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/sh
 # Tester script for assignment 1.
 # Author: Siddhant Jajoo
 # Edited by: Mohit Rane
@@ -51,9 +51,12 @@ fi
 # make clean
 # make
 
-for (( i=1; i<=$NUMFILES; i++ ))
+a=1
+
+while [ $a -le $NUMFILES ]
 do
-	./writer "$WRITEDIR/$WRITESTR$i" "$WRITESTR"
+	./writer "$WRITEDIR/$WRITESTR$a" "$WRITESTR"
+	a=`expr $a + 1`
 done
 
 # make clean

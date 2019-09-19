@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/sh
 # Finder script for assignment 1.
 # Author: Mohit Rane
 
@@ -36,7 +36,7 @@ for line in $(find $FILESDIR -type f)
 do
     MATCHING_LINES=$(cat $line | tr ' ' '\n' | grep $SEARCHSTR | wc -l)
     #echo $MATCHING_LINES :: $line
-    ((MATCHING_TOTAL_LINES+=MATCHING_LINES))
+    MATCHING_TOTAL_LINES=`expr $MATCHING_LINES + $MATCHING_TOTAL_LINES`
 done
 
 echo The number of files are $NUM_OF_FILES and the number of matching lines are $MATCHING_TOTAL_LINES
