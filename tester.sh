@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/ash
 # Tester script for assignment 1.
 # Author: Siddhant Jajoo
 # Edited by: Mohit Rane
@@ -53,7 +53,7 @@ fi
 
 for (( i=1; i<=$NUMFILES; i++ ))
 do
-	./writer.sh "$WRITEDIR/$WRITESTR$i" "$WRITESTR"
+	./writer "$WRITEDIR/$WRITESTR$i" "$WRITESTR"
 done
 
 # make clean

@@ -1,5 +1,5 @@
 # !/bin/bash
-# Script to open qemu terminal.
+# Script to install linux kernel.
 # Author: Mohit Rane.
 
 set -e
@@ -45,3 +45,4 @@ make ARCH=arm CROSS_COMPILE=arm-unknown-linux-gnueabi- dtbs
 
 #Copying resulting generated files to output directory
 cp -a $OUTDIR/$KERNDIR/. $OUTDIR/
+cd $OUTDIR

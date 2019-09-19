@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/ash
 # Writer script for assignment 1.
 # Author: Mohit Rane
 

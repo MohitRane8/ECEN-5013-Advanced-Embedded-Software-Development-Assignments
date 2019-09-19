@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/ash
 # Finder script for assignment 1.
 # Author: Mohit Rane
 
