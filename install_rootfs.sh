@@ -26,11 +26,14 @@ fi
 cd "$OUTDIR"
 
 #5a - Making rootfs
-mkdir $OUTDIR/rootfs
-cd $OUTDIR/rootfs
-mkdir bin dev etc home lib proc sbin sys tmp usr var
-mkdir usr/bin usr/lib usr/sbin
-mkdir -p var/log
+if [ ! -d "$OUTDIR/rootfs" ]
+then
+	mkdir $OUTDIR/rootfs
+	cd $OUTDIR/rootfs
+	mkdir bin dev etc home lib proc sbin sys tmp usr var
+	mkdir usr/bin usr/lib usr/sbin
+	mkdir -p var/log
+fi
 
 sudo chown -R root:root *
 

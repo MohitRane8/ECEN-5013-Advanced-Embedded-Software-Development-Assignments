@@ -45,30 +45,25 @@ echo -e "\nINSTALLING THE REQUIRED DEPENDENCIES FOR THE INSTALLATION\n"
 "${DIR}"/dependencies.sh
 
 
-#TODO: Call a script to perform this function here or place a logic inline
 #Installing Linux Kernel
 echo -e "\nINSTALLING LINUX KERNEL\n"
 "${DIR}"/install_linux_kernel.sh "$OUTDIR"
 
 
-#TODO: Call a script to perform this function here or place a logic inline
 #Installing Rootfs using Busybox
 echo -e "\nINSTALLING ROOTFS USING BUSYBOX\n"
 "${DIR}"/install_rootfs.sh "$OUTDIR"
 
 
-#TODO: Call a script to perform this function here or place a logic inline
 #Copying writer executable, tester.sh and finder.sh here
 echo -e "\nCOPYING WRITER EXECUTABLE, TESTER.SH AND FINDER.SH TO ${OUTDIR}/rootfs/home\n"
 #5e & 5f - place writer executible, finder.sh and tester.sh in rootfs/home/
-#MAKE SURE DIR EXISTS HERE
 cd $DIR
 sudo cp writer $OUTDIR/rootfs/home
 sudo cp finder.sh $OUTDIR/rootfs/home
 sudo cp tester.sh $OUTDIR/rootfs/home
 
 
-#TODO: Call a script to perform this function here or place a logic inline
 #Creating Standalone initramfs.
 echo -e "\nCREATING STANDALONE INITRAMFS\n"
 #5g

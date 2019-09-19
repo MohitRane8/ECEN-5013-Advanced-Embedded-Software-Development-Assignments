@@ -41,25 +41,13 @@ int main( int argc, char* argv[] )
         base = basename(writefile);
         syslog(LOG_DEBUG, "Writing %s to %s", writestr, base);
         ret = fputs(writestr, fp);
-        if(ret != 0) {
-            syslog(LOG_ERR, "fputs error");
-        }
         ret = fputs("\n", fp);
-        if(ret != 0) {
-            syslog(LOG_ERR, "fputs error");
-        }
         
         // write github user name
         fputs("MohitRane8\n", fp);
-        if(ret != 0) {
-            syslog(LOG_ERR, "fputs error");
-        }
 
         // close file pointer - at this point whatever is present in fputs buffer will be written in file
         ret = fclose(fp);
-        if(ret != 0) {
-            syslog(LOG_ERR, "fputs error");
-        }
 
         // write date output
         char buffer[50];
