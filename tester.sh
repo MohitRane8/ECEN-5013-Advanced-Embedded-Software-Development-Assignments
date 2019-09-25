@@ -9,7 +9,8 @@ set -u
 NUMFILES=10
 WRITESTR=ECEN_5013_IS_AWESOME
 WRITEDIR=/tmp/ecen5013
-OUTPUTFILE=assignments/assignment2/assignment2result.txt
+# OUTPUTFILE=assignments/assignment2/assignment2result.txt
+OUTPUTFILE=/home/assignment2result.txt
 
 
 if [ $# -lt 2 ]
