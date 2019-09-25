@@ -1,4 +1,4 @@
-CC=$(CROSS_COMPILE)gcc
+CC = $(CROSS_COMPILE)gcc
 CROSS_COMPILE=
 CFLAGS= -g -Wall -Werror
 OBJ = writer.o
