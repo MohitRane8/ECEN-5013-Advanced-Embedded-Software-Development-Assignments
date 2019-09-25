@@ -3,6 +3,8 @@ CROSS_COMPILE=
 CFLAGS= -g -Wall -Werror
 OBJ = writer.o
 
+all: writer
+
 %.o: %.c
 	$(CROSS_COMPILE)$(CC) -c -o $@ $< $(CFLAGS)
 
