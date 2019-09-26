@@ -10,6 +10,7 @@ NUMFILES=10
 WRITESTR=ECEN_5013_IS_AWESOME
 WRITEDIR=/tmp/ecen5013
 OUTPUTFILE=~/assignments/assignment4/assignment-4-result.txt
+SRCDIR=$(cd $(dirname "$0"); pwd)
 # OUTPUTFILE=/home/assignment-4-result.txt
 
 
@@ -56,7 +57,7 @@ a=1
 
 while [ $a -le $NUMFILES ]
 do
-	./writer "$WRITEDIR/$WRITESTR$a" "$WRITESTR"
+	$SRCDIR/writer "$WRITEDIR/$WRITESTR$a" "$WRITESTR"
 	a=`expr $a + 1`
 done
 
@@ -68,7 +69,7 @@ done
 
 mkdir -p `dirname ${OUTPUTFILE}`
 
-./finder.sh "$WRITEDIR" "$WRITESTR" > "${OUTPUTFILE}"
+$SRCDIR/finder.sh "$WRITEDIR" "$WRITESTR" > "${OUTPUTFILE}"
 
 set +e
 grep "${MATCHSTR}" ${OUTPUTFILE}
