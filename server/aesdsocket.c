@@ -33,6 +33,7 @@ void sigterm_handler(int sig)
     signal_flag = 1;
 }
 
+// function to return size of file
 off_t fsize(const char *filename) {
     struct stat st; 
 
@@ -73,17 +74,13 @@ int main(void)
     int sock, cli;
     struct sockaddr_in server, client;
     unsigned int len;
-    char buff[MAX];
-    // char sendbuff[MAX];
-    // char *buff = (char *)calloc(200, sizeof(char));
+    char recvbuff[MAX];
     char *sendbuff = (char *)calloc(200, sizeof(char));
-    // char *buff;
-    // char *sendbuff;
 
     // SOCKET
     if((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        perror("socket: ");
+        perror("socket");
         exit(-1);
     }
 
@@ -122,84 +119,45 @@ int main(void)
         syslog(LOG_INFO, "Accepted connection from %s", inet_ntoa(client.sin_addr));
 
         // SEND/RECV
-        // read message from client and copy it in buffer
-        // buff = (char *)calloc(200, sizeof(char));
-        bzero(buff, MAX);
-        printf("size of buff = %ld\n", sizeof(buff));
-        printf("buff = %s\n", buff);
-        read(cli, buff, sizeof(buff));
-        printf("received data = %s", buff);
-        printf("size of recv buffer = %ld\n", strlen(buff));
+        // read client message
+        bzero(recvbuff, MAX);
+        read(cli, recvbuff, sizeof(recvbuff));
 
-        // write to file
-        int sz;
-        int fd1 = open("/var/tmp/aesdsocketdata", O_RDWR | O_CREAT | O_APPEND, 0644); 
+        // open a file descriptor to write message to file
+        int fd1 = open("/var/tmp/aesdsocketdata", O_WRONLY | O_CREAT | O_APPEND, 0644); 
         if (fd1 < 0) 
         {
             perror("r1");
             exit(1);
         }
-        sz = write(fd1, buff, (strlen(buff)));
-        // syslog(LOG_DEBUG, "write call returned %d", sz);
-        printf("write call returned %d", sz);
+        write(fd1, recvbuff, (strlen(recvbuff)));
         fsync(fd1);
-
-        off_t ret = fsize("/var/tmp/aesdsocketdata");
-        printf("size of file = %ld\n", ret);
-
-        // free(buff);
-
         close(fd1);
-        // sleep(1);
-        int fd2 = open("/var/tmp/aesdsocketdata", O_RDWR | O_CREAT | O_APPEND, 0644); 
+
+        // open a file descriptor to read whole content of file
+        int fd2 = open("/var/tmp/aesdsocketdata", O_RDONLY | O_CREAT, 0644); 
         if (fd2 < 0) 
         {
             perror("r1");
             exit(1);
         }
-
-        // add content of aesdsocketdata to buffer
-        // sendbuff = (char *)calloc(200, sizeof(char));
-        // bzero(sendbuff, MAX);
-        sz = read(fd2, sendbuff, ret);
-        // sendbuff[ret] = '\0';
-        // syslog(LOG_DEBUG, "read call returned %d", sz);
-        printf("read call returned %d\n", sz);
-        printf("sendbuff = %s", sendbuff);
+        off_t ret = fsize("/var/tmp/aesdsocketdata");
+        read(fd2, sendbuff, ret);
 
         // send buffer data to client
-        // sendbuff = "abcdefg\n";
-        printf("strlen of sent buffer = %ld\n", strlen(sendbuff));
-        printf("sizeof of sent buffer = %ld\n", sizeof(sendbuff));
-
         send(cli, sendbuff, strlen(sendbuff), 0);
-        // system("cat /var/tmp/aesdsocketdata");
-
-        // free(sendbuff);
-
-        // CLOSE
         close(fd2);
+
+        // CLOSE SOCKET
         close(cli);
+
         // log ip address of connected client
         syslog(LOG_INFO, "Closed connection to %s", inet_ntoa(client.sin_addr));
     }
 
     // remove file where received client data is stored
-    printf("check\n");
     system("rm /var/tmp/aesdsocketdata");
     syslog(LOG_CRIT, "Caught signal, exiting");
 
     return 0;
 }
-
-        // sleep(3);
-
-        // for(int i=0; i<200; i++)
-        // {
-        //     if ( buff[i] == '\0' )
-        //     {
-        //         // buff[i+1] = '\0';
-        //         buff[i] = '\n';
-        //         break;
-        //     }
-        // }
