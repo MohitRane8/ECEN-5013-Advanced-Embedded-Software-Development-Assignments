@@ -1,15 +1,14 @@
 CC = $(CROSS_COMPILE)gcc
 CFLAGS= -g -Wall -Werror
-OBJ = writer.o
 
-all: writer
+all: writer aesdsocket
 
-%.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+writer: writer.c
+	$(CC) $(CFLAGS) -o writer writer.c
 
-writer: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+aesdsocket: server/aesdsocket.c
+	$(CC) $(CFLAGS) -o server/aesdsocket server/aesdsocket.c
 
 clean:
-	-rm -f *.o *.d
-	-rm -f writer
+	-rm -f *.o *.d server/*.o server/*.d
+	-rm -f writer server/aesdsocket

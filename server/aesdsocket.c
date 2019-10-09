@@ -12,46 +12,59 @@
 #include <fcntl.h>
 #include <signal.h> 
 
+// Port address
 #define PORT 9000
+
+// buffer size
 #define MAX 200
 
 volatile sig_atomic_t signal_flag;
 
-void sigterm_handler(int sig)
-{
-    signal_flag = 1;
-}
-
+// SIGINT signal handler
 void sigint_handler(int sig)
 {
     signal_flag = 1;
 }
 
-
-/* Signal Handler for SIGINT and SIGTERM */
-// void signalHandler(int sig_num) 
-// { 
-//     signal(SIGINT, signalHandler); 
-//     printf("\n Cannot be terminated using Ctrl+C \n"); 
-//     fflush(stdout);
-
-//     system("rm /var/tmp/aesdsocketdata");
-//     syslog(LOG_CRIT, "Caught signal, exiting");
-//     exit(0);
-// }
+// SIGTERM signal handler
+void sigterm_handler(int sig)
+{
+    signal_flag = 1;
+}
 
 // Main Function
-void main()
+int main(void)
 {
-    // signal(SIGINT, signalHandler);
-    // signal(SIGTERM, signalHandler);
+    // Setting signal handling
+    struct sigaction saint;
+    struct sigaction saterm;
+
+    signal_flag = 0;
+
+    saint.sa_handler = sigint_handler;
+    saint.sa_flags = 0;
+    sigemptyset(&saint.sa_mask);
+
+    saterm.sa_handler = sigint_handler;
+    saterm.sa_flags = 0;
+    sigemptyset(&saterm.sa_mask);
+
+    if (sigaction(SIGINT, &saint, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
+
+    if (sigaction(SIGTERM, &saterm, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
     
     // socket descriptor
     int sock, cli;
     struct sockaddr_in server, client;
     unsigned int len;
-    int sent;
-    char* buff;
+    char buff[MAX];
+    // char* buff = "";
     // char recvbuff[MAX];
     // char sendbuff[MAX];
     // char* sendbuff;
@@ -84,7 +97,7 @@ void main()
         exit(-1);
     }
 
-    while(1)
+    while(signal_flag == 0)
     {
         // ACCEPT
         if((cli = accept(sock, (struct sockaddr *)&client, &len)) == -1)
@@ -128,7 +141,7 @@ void main()
         syslog(LOG_DEBUG, "write call returned %d", sz);
 
         // add content of aesdsocketdata to buffer
-        bzero(buff, MAX);
+        // bzero(buff, MAX);
         read(fd, buff, sizeof(buff));
         printf("%s", buff);
         close(fd);
@@ -143,4 +156,10 @@ void main()
         // log ip address of connected client
         syslog(LOG_INFO, "Closed connection to %s", inet_ntoa(client.sin_addr));
     }
+
+    // remove file where received client data is stored
+    system("rm /var/tmp/aesdsocketdata");
+    syslog(LOG_CRIT, "Caught signal, exiting");
+
+    return 0;
 }
