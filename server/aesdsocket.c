@@ -1,3 +1,8 @@
+/*
+References:
+Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
+*/
+
 // Header Files
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +17,7 @@
 #include <fcntl.h>
 #include <signal.h> 
 #include <sys/stat.h>
+#include <linux/fs.h>
 
 // Port address
 #define PORT 9000
@@ -44,8 +50,88 @@ off_t fsize(const char *filename) {
 }
 
 // Main Function
-int main(void)
+int main(int argc, char *argv[])
 {
+    // if this is set, process will run as daemon
+    int daemon_flag = 0;
+
+    int opt;
+    while((opt = getopt(argc, argv, "d")) != -1)  
+    {  
+        switch(opt)  
+        { 
+            case 'd':  
+                daemon_flag = 1;
+                break;
+            case '?':  
+                printf("unknown option: %c\n", optopt);
+                printf("Usage: ./aesdsocket [-d]\n");
+                printf("-d : run the process as daemon\n");
+                break;
+        }  
+    }
+
+    // after bind is done, run process as deamon if flag is set
+    if(daemon_flag == 1)
+    {
+        printf("creating daemon\n");
+        
+        pid_t pid;
+        // int i;
+        int fd, maxfd;
+
+        /* create new process */
+        pid = fork ();
+        if (pid == -1)
+            return -1;
+        else if (pid != 0)
+            exit (EXIT_SUCCESS);
+        
+        /* create new session and process group */
+        if (setsid() == -1)
+            return -1;
+
+        /* ensure we are not session leader */
+        // pid = fork ();
+        // if (pid == -1)
+        //     return -1;
+        // else if (pid != 0)
+        //     exit (EXIT_SUCCESS);
+
+        /* set the working directory to the root directory */
+        if (chdir ("/") == -1)
+            return -1;
+
+        /* close all open files--NR_OPEN is overkill, but works */
+        // for (i = 0; i < NR_OPEN; i++)
+        //     close (i);
+        maxfd = sysconf(_SC_OPEN_MAX);
+        if (maxfd == -1)     /* Limit is indeterminate... */
+            maxfd = 8192; /* so take a guess */
+
+        for (fd = 0; fd < maxfd; fd++)
+            close(fd);
+
+        /* redirect fd's 0,1,2 to /dev/null */
+        open ("/dev/null", O_RDWR);     /* stdin */
+        dup (0);                        /* stdout */
+        dup (0);                        /* stderror */
+
+        // close(STDIN_FILENO); /* Reopen standard fd's to /dev/null */
+
+        // fd = open("/dev/null", O_RDWR);
+
+        // if (fd != STDIN_FILENO)         /* 'fd' should be 0 */
+        //     return -1;
+        // if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO)
+        //     return -1;
+        // if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO)
+        //     return -1;
+
+        // a check to determine if daemon was created
+        syslog(LOG_DEBUG, "daemon created by aesdsocket\n");
+    }
+
     // Setting signal handling
     struct sigaction saint;
     struct sigaction saterm;
