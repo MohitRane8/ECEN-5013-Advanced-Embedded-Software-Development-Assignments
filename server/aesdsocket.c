@@ -92,20 +92,11 @@ int main(int argc, char *argv[])
         if (setsid() == -1)
             return -1;
 
-        /* ensure we are not session leader */
-        // pid = fork ();
-        // if (pid == -1)
-        //     return -1;
-        // else if (pid != 0)
-        //     exit (EXIT_SUCCESS);
-
         /* set the working directory to the root directory */
         if (chdir ("/") == -1)
             return -1;
 
         /* close all open files--NR_OPEN is overkill, but works */
-        // for (i = 0; i < NR_OPEN; i++)
-        //     close (i);
         maxfd = sysconf(_SC_OPEN_MAX);
         if (maxfd == -1)     /* Limit is indeterminate... */
             maxfd = 8192; /* so take a guess */
@@ -117,17 +108,6 @@ int main(int argc, char *argv[])
         open ("/dev/null", O_RDWR);     /* stdin */
         dup (0);                        /* stdout */
         dup (0);                        /* stderror */
-
-        // close(STDIN_FILENO); /* Reopen standard fd's to /dev/null */
-
-        // fd = open("/dev/null", O_RDWR);
-
-        // if (fd != STDIN_FILENO)         /* 'fd' should be 0 */
-        //     return -1;
-        // if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO)
-        //     return -1;
-        // if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO)
-        //     return -1;
 
         // a check to determine if daemon was created
         syslog(LOG_DEBUG, "daemon created by aesdsocket\n");
