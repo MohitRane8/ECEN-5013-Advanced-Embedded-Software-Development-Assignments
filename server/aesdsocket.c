@@ -1,5 +1,6 @@
 /*
 References:
+Sockets: https://www.youtube.com/watch?v=eVYsIolL2gE&t=422s
 Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
 */
 
@@ -71,7 +72,7 @@ int main(int argc, char *argv[])
         }  
     }
 
-    // after bind is done, run process as deamon if flag is set
+    // check if port is open, then run process as deamon if flag is set
     if(daemon_flag == 1)
     {
         printf("creating daemon\n");
@@ -240,6 +241,9 @@ int main(int argc, char *argv[])
         // log ip address of connected client
         syslog(LOG_INFO, "Closed connection to %s", inet_ntoa(client.sin_addr));
     }
+
+    // close socket
+    close(sock);
 
     // remove file where received client data is stored
     system("rm /var/tmp/aesdsocketdata");
