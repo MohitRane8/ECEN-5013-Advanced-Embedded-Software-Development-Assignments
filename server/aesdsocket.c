@@ -72,46 +72,7 @@ int main(int argc, char *argv[])
         }  
     }
 
-    // check if port is open, then run process as deamon if flag is set
-    if(daemon_flag == 1)
-    {
-        printf("creating daemon\n");
-        
-        pid_t pid;
-        // int i;
-        int fd, maxfd;
 
-        /* create new process */
-        pid = fork ();
-        if (pid == -1)
-            return -1;
-        else if (pid != 0)
-            exit (EXIT_SUCCESS);
-        
-        /* create new session and process group */
-        if (setsid() == -1)
-            return -1;
-
-        /* set the working directory to the root directory */
-        if (chdir ("/") == -1)
-            return -1;
-
-        /* close all open files--NR_OPEN is overkill, but works */
-        maxfd = sysconf(_SC_OPEN_MAX);
-        if (maxfd == -1)     /* Limit is indeterminate... */
-            maxfd = 8192; /* so take a guess */
-
-        for (fd = 0; fd < maxfd; fd++)
-            close(fd);
-
-        /* redirect fd's 0,1,2 to /dev/null */
-        open ("/dev/null", O_RDWR);     /* stdin */
-        dup (0);                        /* stdout */
-        dup (0);                        /* stderror */
-
-        // a check to determine if daemon was created
-        syslog(LOG_DEBUG, "daemon created by aesdsocket\n");
-    }
 
     // Setting signal handling
     struct sigaction saint;
@@ -163,6 +124,37 @@ int main(int argc, char *argv[])
     {
         perror("bind");
         exit(-1);
+    }
+
+    // check if port is open, then run process as deamon if flag is set
+    if(daemon_flag == 1)
+    {
+        printf("creating daemon\n");
+        
+        pid_t pid;
+
+        /* create new process */
+        pid = fork ();
+        if (pid == -1)
+            return -1;
+        else if (pid != 0)
+            exit (EXIT_SUCCESS);
+        
+        /* create new session and process group */
+        if (setsid() == -1)
+            return -1;
+
+        /* set the working directory to the root directory */
+        if (chdir ("/") == -1)
+            return -1;
+
+        /* redirect fd's 0,1,2 to /dev/null */
+        open ("/dev/null", O_RDWR);     /* stdin */
+        dup (0);                        /* stdout */
+        dup (0);                        /* stderror */
+
+        // a check to determine if daemon was created
+        syslog(LOG_DEBUG, "daemon created by aesdsocket\n");
     }
 
     // LISTEN
