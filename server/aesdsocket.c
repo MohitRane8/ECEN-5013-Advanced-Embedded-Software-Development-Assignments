@@ -22,12 +22,13 @@ Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
 #include <sys/queue.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <time.h>
 
 // Port address
 #define PORT 9000
 
 // buffer size
-#define MAX 200
+#define MAX 500
 
 pthread_mutex_t ll_lock;
 pthread_mutex_t file_lock;
@@ -50,7 +51,7 @@ void sigterm_handler(int sig)
 struct node_data
 {
     pthread_t thread;
-    bool complete_flag;
+    int complete_flag;
 };
 
 // linked list node
@@ -59,6 +60,9 @@ struct node
     struct node_data thread_data;
     SLIST_ENTRY(node) nodes;
 };
+
+// create data type for head of queue for nodes of type 'struct node'
+SLIST_HEAD(head_s, node) head = SLIST_HEAD_INITIALIZER(head);
 
 // thread argument struct
 struct thread_arg_t
@@ -75,6 +79,38 @@ off_t fsize(const char *filename) {
         return st.st_size;
 
     return -1; 
+}
+
+void* timestamp_function(void* thread_arg)
+{
+    char* time_buff;
+    char buff[30];
+    time_t time_ptr;
+
+    while(signal_flag == 0)
+    {        
+        time(&time_ptr);
+        time_buff = ctime(&time_ptr);
+        // strcat(buff, time_buff);
+        sprintf(buff, "timestamp:%s", time_buff);
+
+        // open a file descriptor to write message to file
+        int fd = open("/var/tmp/aesdsocketdata", O_WRONLY | O_CREAT | O_APPEND, 0644); 
+        if (fd < 0) 
+        {
+            perror("r1");
+            exit(1);
+        }
+        pthread_mutex_lock(&file_lock);
+        write(fd, buff, strlen(buff));
+        fsync(fd);
+        pthread_mutex_unlock(&file_lock);
+        close(fd);
+
+        sleep(10);
+    }
+
+    pthread_exit((void *)0);
 }
 
 void* thread_function(void* thread_arg)
@@ -110,8 +146,8 @@ void* thread_function(void* thread_arg)
         perror("r1");
         exit(1);
     }
-    off_t ret = fsize("/var/tmp/aesdsocketdata");
     pthread_mutex_lock(&file_lock);
+    off_t ret = fsize("/var/tmp/aesdsocketdata");
     read(fd2, sendbuff, ret);
     pthread_mutex_unlock(&file_lock);
 
@@ -126,9 +162,17 @@ void* thread_function(void* thread_arg)
     syslog(LOG_INFO, "Closed connection to %s", inet_ntoa(threadParam->client.sin_addr));
 
     // set thread complete flag
+    pthread_t self_id;
+    self_id = pthread_self();
     struct node * llnode = NULL;
     pthread_mutex_lock(&ll_lock);
-    llnode->thread_data.complete_flag = 1;
+    SLIST_FOREACH(llnode, &head, nodes)
+    {
+        if(llnode->thread_data.thread == self_id)
+        {
+            llnode->thread_data.complete_flag = 1;
+        }
+    }
     pthread_mutex_unlock(&ll_lock);
 
     pthread_exit((void *)0);
@@ -139,6 +183,8 @@ int main(int argc, char *argv[])
 {
     // if this is set, process will run as daemon
     int daemon_flag = 0;
+
+    int rc;
 
     // parse command line arguments
     int opt;
@@ -157,8 +203,6 @@ int main(int argc, char *argv[])
         }  
     }
 
-    // create data type for head of queue for nodes of type 'struct node'
-    SLIST_HEAD(head_s, node) head;
     // initialize head before use
     SLIST_INIT(&head);
 
@@ -264,6 +308,13 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    // create timestamp thread
+    pthread_t timestamp_thread;
+    if((rc = pthread_create(&timestamp_thread, NULL, timestamp_function, NULL)) == -1)
+    {
+        perror("pthread_create for timestamp_thread");
+    }
+
     while(signal_flag == 0)
     {
         // ACCEPT
@@ -289,6 +340,7 @@ int main(int argc, char *argv[])
             if(llnode->thread_data.complete_flag == 1)
             {
                 pthread_join(llnode->thread_data.thread, NULL);
+                SLIST_REMOVE(&head, llnode, node, nodes);
                 free(llnode);
                 llnode = NULL;
             }
@@ -311,6 +363,8 @@ int main(int argc, char *argv[])
 
     // close socket
     close(sock);
+
+    pthread_join(timestamp_thread, NULL);
 
     pthread_mutex_destroy(&ll_lock); 
     pthread_mutex_destroy(&file_lock); 
