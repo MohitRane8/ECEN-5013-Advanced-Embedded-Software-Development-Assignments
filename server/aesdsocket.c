@@ -333,20 +333,6 @@ int main(int argc, char *argv[])
         thread_arg.cli = cli;
         thread_arg.client = client;
 
-        // join threads which are complete
-        pthread_mutex_lock(&ll_lock);
-        SLIST_FOREACH(llnode, &head, nodes)
-        {
-            if(llnode->thread_data.complete_flag == 1)
-            {
-                pthread_join(llnode->thread_data.thread, NULL);
-                SLIST_REMOVE(&head, llnode, node, nodes);
-                free(llnode);
-                llnode = NULL;
-            }
-        }
-        pthread_mutex_unlock(&ll_lock);
-
         // create thread to handle client connection
         llnode = malloc(sizeof(struct node));
         if(llnode == NULL)
@@ -359,6 +345,20 @@ int main(int argc, char *argv[])
         pthread_mutex_unlock(&ll_lock);
         pthread_create(&llnode->thread_data.thread, NULL, thread_function, (void*)&thread_arg);
         llnode = NULL;
+
+        // join threads which are complete
+        // pthread_mutex_lock(&ll_lock);
+        // SLIST_FOREACH(llnode, &head, nodes)
+        // {
+        //     if(llnode->thread_data.complete_flag == 1)
+        //     {
+        //         pthread_join(llnode->thread_data.thread, NULL);
+        //         SLIST_REMOVE(&head, llnode, node, nodes);
+        //         free(llnode);
+        //         llnode = NULL;
+        //     }
+        // }
+        // pthread_mutex_unlock(&ll_lock);
     }
 
     // close socket
