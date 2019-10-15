@@ -19,12 +19,18 @@ Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
 #include <signal.h> 
 #include <sys/stat.h>
 #include <linux/fs.h>
+#include <sys/queue.h>
+#include <pthread.h>
+#include <stdbool.h>
 
 // Port address
 #define PORT 9000
 
 // buffer size
 #define MAX 200
+
+pthread_mutex_t ll_lock;
+pthread_mutex_t file_lock;
 
 volatile sig_atomic_t signal_flag;
 
@@ -40,6 +46,27 @@ void sigterm_handler(int sig)
     signal_flag = 1;
 }
 
+// linked list node data structure
+struct node_data
+{
+    pthread_t thread;
+    bool complete_flag;
+};
+
+// linked list node
+struct node
+{
+    struct node_data thread_data;
+    SLIST_ENTRY(node) nodes;
+};
+
+// thread argument struct
+struct thread_arg_t
+{
+    int cli;
+    struct sockaddr_in client;
+};
+
 // function to return size of file
 off_t fsize(const char *filename) {
     struct stat st; 
@@ -50,12 +77,70 @@ off_t fsize(const char *filename) {
     return -1; 
 }
 
+void* thread_function(void* thread_arg)
+{
+    // thread parameters
+    struct thread_arg_t* threadParam = (struct thread_arg_t*) thread_arg;
+
+    char recvbuff[MAX];
+    char *sendbuff = (char *)calloc(200, sizeof(char));
+    
+    // SEND/RECV
+    // read client message
+    bzero(recvbuff, MAX);
+    read(threadParam->cli, recvbuff, sizeof(recvbuff));
+
+    // open a file descriptor to write message to file
+    int fd1 = open("/var/tmp/aesdsocketdata", O_WRONLY | O_CREAT | O_APPEND, 0644); 
+    if (fd1 < 0) 
+    {
+        perror("r1");
+        exit(1);
+    }
+    pthread_mutex_lock(&file_lock);
+    write(fd1, recvbuff, (strlen(recvbuff)));
+    fsync(fd1);
+    pthread_mutex_unlock(&file_lock);
+    close(fd1);
+
+    // open a file descriptor to read whole content of file
+    int fd2 = open("/var/tmp/aesdsocketdata", O_RDONLY | O_CREAT, 0644); 
+    if (fd2 < 0) 
+    {
+        perror("r1");
+        exit(1);
+    }
+    off_t ret = fsize("/var/tmp/aesdsocketdata");
+    pthread_mutex_lock(&file_lock);
+    read(fd2, sendbuff, ret);
+    pthread_mutex_unlock(&file_lock);
+
+    // send buffer data to client
+    send(threadParam->cli, sendbuff, strlen(sendbuff), 0);
+    close(fd2);
+
+    // CLOSE SOCKET
+    close(threadParam->cli);
+
+    // log ip address of connected client
+    syslog(LOG_INFO, "Closed connection to %s", inet_ntoa(threadParam->client.sin_addr));
+
+    // set thread complete flag
+    struct node * llnode = NULL;
+    pthread_mutex_lock(&ll_lock);
+    llnode->thread_data.complete_flag = 1;
+    pthread_mutex_unlock(&ll_lock);
+
+    pthread_exit((void *)0);
+}
+
 // Main Function
 int main(int argc, char *argv[])
 {
     // if this is set, process will run as daemon
     int daemon_flag = 0;
 
+    // parse command line arguments
     int opt;
     while((opt = getopt(argc, argv, "d")) != -1)  
     {  
@@ -72,7 +157,24 @@ int main(int argc, char *argv[])
         }  
     }
 
+    // create data type for head of queue for nodes of type 'struct node'
+    SLIST_HEAD(head_s, node) head;
+    // initialize head before use
+    SLIST_INIT(&head);
 
+    struct node * llnode = NULL;
+
+    if (pthread_mutex_init(&ll_lock, NULL) != 0) 
+    { 
+        printf("\n mutex init has failed\n"); 
+        return -1; 
+    }
+
+    if (pthread_mutex_init(&file_lock, NULL) != 0) 
+    { 
+        printf("\n mutex init has failed\n"); 
+        return -1; 
+    }
 
     // Setting signal handling
     struct sigaction saint;
@@ -102,8 +204,6 @@ int main(int argc, char *argv[])
     int sock, cli;
     struct sockaddr_in server, client;
     unsigned int len;
-    char recvbuff[MAX];
-    char *sendbuff = (char *)calloc(200, sizeof(char));
 
     // SOCKET
     if((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -177,45 +277,43 @@ int main(int argc, char *argv[])
         // log ip address of connected client
         syslog(LOG_INFO, "Accepted connection from %s", inet_ntoa(client.sin_addr));
 
-        // SEND/RECV
-        // read client message
-        bzero(recvbuff, MAX);
-        read(cli, recvbuff, sizeof(recvbuff));
+        // THINK ABOUT MEMORY FOR THIS
+        struct thread_arg_t thread_arg;
+        thread_arg.cli = cli;
+        thread_arg.client = client;
 
-        // open a file descriptor to write message to file
-        int fd1 = open("/var/tmp/aesdsocketdata", O_WRONLY | O_CREAT | O_APPEND, 0644); 
-        if (fd1 < 0) 
+        // join threads which are complete
+        pthread_mutex_lock(&ll_lock);
+        SLIST_FOREACH(llnode, &head, nodes)
         {
-            perror("r1");
-            exit(1);
+            if(llnode->thread_data.complete_flag == 1)
+            {
+                pthread_join(llnode->thread_data.thread, NULL);
+                free(llnode);
+                llnode = NULL;
+            }
         }
-        write(fd1, recvbuff, (strlen(recvbuff)));
-        fsync(fd1);
-        close(fd1);
+        pthread_mutex_unlock(&ll_lock);
 
-        // open a file descriptor to read whole content of file
-        int fd2 = open("/var/tmp/aesdsocketdata", O_RDONLY | O_CREAT, 0644); 
-        if (fd2 < 0) 
+        // create thread to handle client connection
+        llnode = malloc(sizeof(struct node));
+        if(llnode == NULL)
         {
-            perror("r1");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
-        off_t ret = fsize("/var/tmp/aesdsocketdata");
-        read(fd2, sendbuff, ret);
-
-        // send buffer data to client
-        send(cli, sendbuff, strlen(sendbuff), 0);
-        close(fd2);
-
-        // CLOSE SOCKET
-        close(cli);
-
-        // log ip address of connected client
-        syslog(LOG_INFO, "Closed connection to %s", inet_ntoa(client.sin_addr));
+        llnode->thread_data.complete_flag = 0;
+        pthread_mutex_lock(&ll_lock);
+        SLIST_INSERT_HEAD(&head, llnode, nodes);
+        pthread_mutex_unlock(&ll_lock);
+        pthread_create(&llnode->thread_data.thread, NULL, thread_function, (void*)&thread_arg);
+        llnode = NULL;
     }
 
     // close socket
     close(sock);
+
+    pthread_mutex_destroy(&ll_lock); 
+    pthread_mutex_destroy(&file_lock); 
 
     // remove file where received client data is stored
     system("rm /var/tmp/aesdsocketdata");

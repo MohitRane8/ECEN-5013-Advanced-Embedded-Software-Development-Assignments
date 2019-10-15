@@ -7,7 +7,7 @@ writer: writer.c
 	$(CC) $(CFLAGS) -o writer writer.c
 
 aesdsocket: server/aesdsocket.c
-	$(CC) $(CFLAGS) -o server/aesdsocket server/aesdsocket.c
+	$(CC) $(CFLAGS) -o server/aesdsocket server/aesdsocket.c -lpthread
 
 clean:
 	-rm -f *.o *.d server/*.o server/*.d
