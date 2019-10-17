@@ -28,7 +28,7 @@ Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
 #define PORT 9000
 
 // buffer size
-#define MAX 500
+#define MAX 2500
 
 pthread_mutex_t ll_lock;
 pthread_mutex_t file_lock;
@@ -72,7 +72,8 @@ struct thread_arg_t
 };
 
 // function to return size of file
-off_t fsize(const char *filename) {
+off_t fsize(const char *filename) 
+{
     struct stat st; 
 
     if (stat(filename, &st) == 0)
@@ -119,7 +120,7 @@ void* thread_function(void* thread_arg)
     struct thread_arg_t* threadParam = (struct thread_arg_t*) thread_arg;
 
     char recvbuff[MAX];
-    char *sendbuff = (char *)calloc(200, sizeof(char));
+    char *sendbuff = (char *)calloc(2000, sizeof(char));
     
     // SEND/RECV
     // read client message
@@ -333,8 +334,23 @@ int main(int argc, char *argv[])
         thread_arg.cli = cli;
         thread_arg.client = client;
 
+        // join threads which are complete
+        pthread_mutex_lock(&ll_lock);
+        SLIST_FOREACH(llnode, &head, nodes)
+        {
+            if(llnode->thread_data.complete_flag == 1)
+            {
+                pthread_join(llnode->thread_data.thread, NULL);
+                syslog(LOG_DEBUG, "thread joined tid = %ld", llnode->thread_data.thread);
+                SLIST_REMOVE(&head, llnode, node, nodes);
+                free(llnode);
+                // llnode = NULL;
+            }
+        }
+        pthread_mutex_unlock(&ll_lock);
+
         // create thread to handle client connection
-        llnode = malloc(sizeof(struct node));
+        llnode = (struct node*)malloc(sizeof(struct node));
         if(llnode == NULL)
         {
             exit(EXIT_FAILURE);
@@ -344,21 +360,8 @@ int main(int argc, char *argv[])
         SLIST_INSERT_HEAD(&head, llnode, nodes);
         pthread_mutex_unlock(&ll_lock);
         pthread_create(&llnode->thread_data.thread, NULL, thread_function, (void*)&thread_arg);
+        syslog(LOG_DEBUG, "thread created tid = %ld", llnode->thread_data.thread);
         llnode = NULL;
-
-        // join threads which are complete
-        // pthread_mutex_lock(&ll_lock);
-        // SLIST_FOREACH(llnode, &head, nodes)
-        // {
-        //     if(llnode->thread_data.complete_flag == 1)
-        //     {
-        //         pthread_join(llnode->thread_data.thread, NULL);
-        //         SLIST_REMOVE(&head, llnode, node, nodes);
-        //         free(llnode);
-        //         llnode = NULL;
-        //     }
-        // }
-        // pthread_mutex_unlock(&ll_lock);
     }
 
     // close socket
