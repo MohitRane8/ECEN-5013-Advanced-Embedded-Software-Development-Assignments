@@ -28,7 +28,7 @@ Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
 #define PORT 9000
 
 // buffer size
-#define MAX 2500
+#define MAX 500
 
 pthread_mutex_t ll_lock;
 pthread_mutex_t file_lock;
