@@ -176,7 +176,7 @@ void* thread_function(void* thread_arg)
     }
     pthread_mutex_unlock(&ll_lock);
 
-    pthread_exit((void *)0);
+    // pthread_exit((void *)0);
 }
 
 // Main Function
