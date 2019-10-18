@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
         // ACCEPT
         if((cli = accept(sock, (struct sockaddr *)&client, &len)) == -1)
         {
-            if (errno == EINTR) break;
+            if (signal_flag == 1) break;
             perror("accept");
             exit(-1);
         }

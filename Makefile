@@ -17,7 +17,7 @@ endif
 all: writer aesdsocket
 
 writer: writer.c
-	$(CC) $(CCFLAGS) -o writer writer.c
+	$(CC) $(CCFLAGS) $(OPTFLAGS) -o writer writer.c
 
 aesdsocket: server/aesdsocket.c
 	$(CC) $(CCFLAGS) $(OPTFLAGS) -o server/aesdsocket server/aesdsocket.c $(LDFLAGS)
