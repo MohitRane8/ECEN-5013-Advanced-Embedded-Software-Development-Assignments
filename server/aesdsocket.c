@@ -88,8 +88,9 @@ void* timestamp_function(void* thread_arg)
     char buff[30];
     time_t time_ptr;
 
-    while(signal_flag == 0)
-    {        
+    while(1)
+    {
+        if(signal_flag == 1) { break; }
         time(&time_ptr);
         time_buff = ctime(&time_ptr);
         // strcat(buff, time_buff);
@@ -104,7 +105,7 @@ void* timestamp_function(void* thread_arg)
         }
         pthread_mutex_lock(&file_lock);
         write(fd, buff, strlen(buff));
-        // fsync(fd);
+        fsync(fd);
         pthread_mutex_unlock(&file_lock);
         close(fd);
 
@@ -176,7 +177,7 @@ void* thread_function(void* thread_arg)
     }
     pthread_mutex_unlock(&ll_lock);
 
-    // pthread_exit((void *)0);
+    pthread_exit(NULL);
 }
 
 // Main Function
@@ -365,7 +366,7 @@ int main(int argc, char *argv[])
     }
 
     // close socket
-    close(sock);
+    // close(sock);
 
     pthread_mutex_destroy(&ll_lock); 
     pthread_mutex_destroy(&file_lock); 
@@ -374,7 +375,7 @@ int main(int argc, char *argv[])
     system("rm /var/tmp/aesdsocketdata");
     syslog(LOG_CRIT, "Caught signal, exiting");
 
-    pthread_join(timestamp_thread, NULL);
+    // pthread_join(timestamp_thread, NULL);
 
     return 0;
 }
