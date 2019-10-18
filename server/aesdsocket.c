@@ -28,7 +28,7 @@ Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
 #define PORT 9000
 
 // buffer size
-#define MAX 500
+#define MAX 200
 
 pthread_mutex_t ll_lock;
 pthread_mutex_t file_lock;
@@ -104,14 +104,14 @@ void* timestamp_function(void* thread_arg)
         }
         pthread_mutex_lock(&file_lock);
         write(fd, buff, strlen(buff));
-        fsync(fd);
+        // fsync(fd);
         pthread_mutex_unlock(&file_lock);
         close(fd);
 
         sleep(10);
     }
 
-    pthread_exit((void *)0);
+    // pthread_exit((void *)0);
 }
 
 void* thread_function(void* thread_arg)
@@ -120,7 +120,7 @@ void* thread_function(void* thread_arg)
     struct thread_arg_t* threadParam = (struct thread_arg_t*) thread_arg;
 
     char recvbuff[MAX];
-    char *sendbuff = (char *)calloc(2000, sizeof(char));
+    char *sendbuff = (char *)calloc(1000, sizeof(char));
     
     // SEND/RECV
     // read client message
@@ -367,14 +367,14 @@ int main(int argc, char *argv[])
     // close socket
     close(sock);
 
-    pthread_join(timestamp_thread, NULL);
-
     pthread_mutex_destroy(&ll_lock); 
     pthread_mutex_destroy(&file_lock); 
 
     // remove file where received client data is stored
     system("rm /var/tmp/aesdsocketdata");
     syslog(LOG_CRIT, "Caught signal, exiting");
+
+    pthread_join(timestamp_thread, NULL);
 
     return 0;
 }
