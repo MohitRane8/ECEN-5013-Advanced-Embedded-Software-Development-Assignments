@@ -111,7 +111,7 @@ void* timestamp_function(void* thread_arg)
         sleep(10);
     }
 
-    // pthread_exit((void *)0);
+    pthread_exit((void *)0);
 }
 
 void* thread_function(void* thread_arg)
