@@ -112,7 +112,7 @@ void* timestamp_function(void* thread_arg)
         sleep(10);
     }
 
-    // pthread_exit((void *)0);
+    pthread_exit(NULL);
 }
 
 void* thread_function(void* thread_arg)
@@ -156,6 +156,8 @@ void* thread_function(void* thread_arg)
     // send buffer data to client
     send(threadParam->cli, sendbuff, strlen(sendbuff), 0);
     close(fd2);
+
+    free(sendbuff);
 
     // CLOSE SOCKET
     close(threadParam->cli);
@@ -344,8 +346,6 @@ int main(int argc, char *argv[])
                 pthread_join(llnode->thread_data.thread, NULL);
                 syslog(LOG_DEBUG, "thread joined tid = %ld", llnode->thread_data.thread);
                 SLIST_REMOVE(&head, llnode, node, nodes);
-                free(llnode);
-                // llnode = NULL;
             }
         }
         pthread_mutex_unlock(&ll_lock);
@@ -362,6 +362,14 @@ int main(int argc, char *argv[])
         pthread_mutex_unlock(&ll_lock);
         pthread_create(&llnode->thread_data.thread, NULL, thread_function, (void*)&thread_arg);
         syslog(LOG_DEBUG, "thread created tid = %ld", llnode->thread_data.thread);
+        llnode = NULL;
+    }
+
+    while (!SLIST_EMPTY(&head))
+    {
+        llnode = SLIST_FIRST(&head);
+        SLIST_REMOVE(&head, llnode, node, nodes);
+        free(llnode);
         llnode = NULL;
     }
 
