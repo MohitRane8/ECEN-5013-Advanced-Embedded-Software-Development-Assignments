@@ -7,7 +7,7 @@ ifeq ($(CCFLAGS),)
 endif
 
 ifeq ($(LDFLAGS),)
-	LDFLAGS = -pthread -lrt
+	LDFLAGS = -pthread -lgcc_s -lrt
 endif
 
 all: writer aesdsocket
