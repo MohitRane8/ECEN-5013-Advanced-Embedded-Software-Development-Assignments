@@ -23,7 +23,7 @@
 #  define PDEBUG(fmt, args...) /* not debugging: nothing */
 #endif
 
-#define CB_SIZE 4
+#define CB_SIZE 10
 
 struct CB_struct
 {

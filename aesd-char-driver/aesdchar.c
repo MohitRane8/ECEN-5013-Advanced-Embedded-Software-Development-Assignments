@@ -22,6 +22,7 @@
 #include "aesdchar.h"
 int aesd_major =   0; // use dynamic major
 int aesd_minor =   0;
+int n_flag = 1;		// new line flag
 
 MODULE_AUTHOR("Mohit Rane"); /** DONE - TODO: fill in your name **/
 MODULE_LICENSE("Dual BSD/GPL");
@@ -64,8 +65,9 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	int j = dev->CB.tail;
 	int i = 0;
 
-    PDEBUG("READ\n");
-	PDEBUG("dev->CB.data[0] = %s\n", dev->CB.data[0]);
+    PDEBUG("IN READ\n");
+
+	PDEBUG("dev->size = %ld and f_pos = %lld\n", dev->size, *f_pos);
 
 	if (*f_pos >= dev->size)
 		return retval;
@@ -73,42 +75,35 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	// send device contents
 	for(i=0; i<CB_SIZE; i++)
 	{
-		if(dev->CB.data[j] != NULL)
+		PDEBUG("j = %d\n", j);
+		
+		if(dev->CB.data[j] == NULL)
 		{
-			// send data to user
-			count = dev->CB.size[j] - *f_pos;	
-			if (copy_to_user(buf, dev->CB.data[j], count))
-			{
-				retval = -EFAULT;
-				return retval;
-			}
-
-			*f_pos += count;
-			retval += count;
-
-			j = j + 1;
-			j = j % CB_SIZE;
-		}
-		else
-		{
+			PDEBUG("got null\n");
 			break;
 		}
+
+		// send data to user
+		count = dev->CB.size[j];	
+		if (copy_to_user(buf + *f_pos, dev->CB.data[j], count))
+		{
+			retval = -EFAULT;
+			return retval;
+		}
+		PDEBUG("CB[%d] = %s; size = %d\n", j, dev->CB.data[j], dev->CB.size[j]);
+		
+		*f_pos = *f_pos + count;
+		retval = retval + count;
+
+		PDEBUG("f_pos = %lld\n", *f_pos);
+
+		j = j + 1;
+		j = j % CB_SIZE;
 	}
 
+	PDEBUG("f_pos = %lld\n", *f_pos);
+
 	return retval;
-
-	// count = dev->CB.size[j] - *f_pos;
-
-    // if (copy_to_user(buf, dev->CB.data[0], count))
-	// {
-    //     retval = -EFAULT;
-	// 	return retval;
-    // }
-
-	// PDEBUG("read %zu bytes with offset %lld\n",count,*f_pos);
-
-	// *f_pos += count;
-	// retval += count;
 }
 
 /* WRITE METHOD */
@@ -116,46 +111,51 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
                 loff_t *f_pos)
 {
 	struct aesd_dev *dev = filp->private_data;
-
     ssize_t retval = -ENOMEM;
-
 	int i = 0;
-    
     retval = count;
 
     PDEBUG("WRITE\n");
     PDEBUG("write %zu bytes with offset %lld\n",count,*f_pos);
 
 	// if overwrite then free previous data
-	if (dev->CB.data[dev->CB.head] != NULL)
+	if (dev->CB.data[dev->CB.head] != NULL && n_flag == 1)
 	{
-		dev->CB.ow_flag = 1;
+		dev->CB.tail = dev->CB.head + 1;
 		kfree(dev->CB.data[dev->CB.head]);
 	}
+	PDEBUG("tail  	: %d\n", dev->CB.tail);
 
-	// malloc and copy data from user and set individual size
-    dev->CB.data[dev->CB.head] = (char*)kmalloc(count * sizeof(char), GFP_KERNEL);
-    if (copy_from_user(dev->CB.data[dev->CB.head], buf, count)) { retval = -EFAULT; }
-	dev->CB.size[dev->CB.head] = count;
-
-	// increment head pointer
-	dev->CB.head = dev->CB.head + 1;
-	dev->CB.head = dev->CB.head % CB_SIZE;
-
-	// set tail after head if there was overwrite
-	if(dev->CB.ow_flag == 1)
+	// insert received data if new line flag is set else append
+	// update size of character array (CB.data) in both case
+	if(n_flag == 1)
 	{
-		dev->CB.tail = dev->CB.head;
+		dev->CB.data[dev->CB.head] = (char*)kmalloc(count * sizeof(char), GFP_KERNEL);
+		if (copy_from_user(dev->CB.data[dev->CB.head], buf, count)) { retval = -EFAULT; }
+		dev->CB.size[dev->CB.head] = count;
 	}
+	else 
+	{
+		krealloc(dev->CB.data[dev->CB.head], count + dev->CB.size[dev->CB.head], GFP_KERNEL);
+		if (copy_from_user(dev->CB.data[dev->CB.head] + dev->CB.size[dev->CB.head], buf, count)) { retval = -EFAULT; }
+		dev->CB.size[dev->CB.head] = dev->CB.size[dev->CB.head] + count;
+	}
+	PDEBUG("CB[%d]	: %s\n", dev->CB.head, dev->CB.data[dev->CB.head]);
+	PDEBUG("size  	: %d\n", dev->CB.size[dev->CB.head]);
+
+	// set new line flag if last character of received string is \n
+	n_flag = (*(dev->CB.data[dev->CB.head] + dev->CB.size[dev->CB.head] - 1) == '\n') ? 1 : 0;
+	PDEBUG("n_flag	: %d\n", n_flag);
+
+	// increment head pointer if new line flag is set
+	if(n_flag == 1) { dev->CB.head = (dev->CB.head + 1) % CB_SIZE; }
+	PDEBUG("head  	: %d\n", dev->CB.head);
 
 	// calculate total device size
+	dev->size = 0;
 	for(i=0; i<CB_SIZE; i++)
-	{
 		dev->size = dev->size + dev->CB.size[i];
-	}
-
-	PDEBUG("Device file size:    %ld\n", dev->size);
-    PDEBUG("Malloced and wrote: %s\n", dev->CB.data[0]);
+	PDEBUG("dev size: %ld\n", dev->size);
 
     return retval;
 }
