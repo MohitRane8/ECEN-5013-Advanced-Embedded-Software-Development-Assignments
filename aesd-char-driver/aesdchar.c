@@ -61,28 +61,54 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 {
 	ssize_t retval = 0;
     struct aesd_dev *dev = filp->private_data;
+	int j = dev->CB.tail;
+	int i = 0;
 
     PDEBUG("READ\n");
-	PDEBUG("dev->CB.data = %s\n", dev->CB.data);
+	PDEBUG("dev->CB.data[0] = %s\n", dev->CB.data[0]);
 
 	if (*f_pos >= dev->size)
 		return retval;
 
-	// if (*f_pos + count > dev->size)
-	count = dev->size - *f_pos;
-
-    if (copy_to_user(buf, dev->CB.data, count))
+	// send device contents
+	for(i=0; i<CB_SIZE; i++)
 	{
-        retval = -EFAULT;
-		return retval;
-    }
+		if(dev->CB.data[j] != NULL)
+		{
+			// send data to user
+			count = dev->CB.size[j] - *f_pos;	
+			if (copy_to_user(buf, dev->CB.data[j], count))
+			{
+				retval = -EFAULT;
+				return retval;
+			}
 
-	PDEBUG("read %zu bytes with offset %lld\n",count,*f_pos);
+			*f_pos += count;
+			retval += count;
 
-	*f_pos += count;
-	retval = count;
+			j = j + 1;
+			j = j % CB_SIZE;
+		}
+		else
+		{
+			break;
+		}
+	}
 
 	return retval;
+
+	// count = dev->CB.size[j] - *f_pos;
+
+    // if (copy_to_user(buf, dev->CB.data[0], count))
+	// {
+    //     retval = -EFAULT;
+	// 	return retval;
+    // }
+
+	// PDEBUG("read %zu bytes with offset %lld\n",count,*f_pos);
+
+	// *f_pos += count;
+	// retval += count;
 }
 
 /* WRITE METHOD */
@@ -92,23 +118,44 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	struct aesd_dev *dev = filp->private_data;
 
     ssize_t retval = -ENOMEM;
+
+	int i = 0;
     
     retval = count;
 
     PDEBUG("WRITE\n");
     PDEBUG("write %zu bytes with offset %lld\n",count,*f_pos);
-    // PDEBUG("Received string: %s\n", buf);
-    // PDEBUG("String count:    %ld\n", count);
 
-    dev->CB.data = (char*)kmalloc(count * sizeof(char), GFP_KERNEL);
-    
-    if (copy_from_user(dev->CB.data, buf, count)) {
-        retval = -EFAULT;
-    }
+	// if overwrite then free previous data
+	if (dev->CB.data[dev->CB.head] != NULL)
+	{
+		dev->CB.ow_flag = 1;
+		kfree(dev->CB.data[dev->CB.head]);
+	}
 
-	dev->size = count;
+	// malloc and copy data from user and set individual size
+    dev->CB.data[dev->CB.head] = (char*)kmalloc(count * sizeof(char), GFP_KERNEL);
+    if (copy_from_user(dev->CB.data[dev->CB.head], buf, count)) { retval = -EFAULT; }
+	dev->CB.size[dev->CB.head] = count;
+
+	// increment head pointer
+	dev->CB.head = dev->CB.head + 1;
+	dev->CB.head = dev->CB.head % CB_SIZE;
+
+	// set tail after head if there was overwrite
+	if(dev->CB.ow_flag == 1)
+	{
+		dev->CB.tail = dev->CB.head;
+	}
+
+	// calculate total device size
+	for(i=0; i<CB_SIZE; i++)
+	{
+		dev->size = dev->size + dev->CB.size[i];
+	}
+
 	PDEBUG("Device file size:    %ld\n", dev->size);
-    PDEBUG("Malloced and wrote: %s\n", dev->CB.data);
+    PDEBUG("Malloced and wrote: %s\n", dev->CB.data[0]);
 
     return retval;
 }

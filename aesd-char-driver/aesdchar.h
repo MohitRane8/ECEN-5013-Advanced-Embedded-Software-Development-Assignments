@@ -23,13 +23,15 @@
 #  define PDEBUG(fmt, args...) /* not debugging: nothing */
 #endif
 
+#define CB_SIZE 4
+
 struct CB_struct
 {
-	int max_size;
 	int ow_flag;
 	int head;
 	int tail;
-	char* data;
+	int size[CB_SIZE];		/* stores size of each buffer element 	*/
+	char* data[CB_SIZE];	/* stores string						 */
 };
 
 struct aesd_dev
