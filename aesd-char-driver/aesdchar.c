@@ -16,30 +16,25 @@
 #include <linux/printk.h>
 #include <linux/types.h>
 #include <linux/cdev.h>
-#include <linux/fs.h> // file_operations
+#include <linux/fs.h> 	// file_operations
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include "aesdchar.h"
-int aesd_major =   0; // use dynamic major
+int aesd_major =   0; 	// use dynamic major
 int aesd_minor =   0;
-int n_flag = 1;		// new line flag
+int n_flag = 1;			// new line flag
 
-MODULE_AUTHOR("Mohit Rane"); /** DONE - TODO: fill in your name **/
+MODULE_AUTHOR("Mohit Rane");
 MODULE_LICENSE("Dual BSD/GPL");
 
 struct aesd_dev aesd_device;
-
-//char* ptr;
 
 /* OPEN METHOD */
 int aesd_open(struct inode *inode, struct file *filp)
 {
     struct aesd_dev *dev; /* device information */
     
-    // PDEBUG("%s\n", __FUNCTION__);
 	PDEBUG("OPEN\n");
-    // PDEBUG("Device Major : %d \n", imajor(inode));
-    // PDEBUG("Device Minor : %d \n", iminor(inode));
     
     dev = container_of(inode->i_cdev, struct aesd_dev, cdev);
     filp->private_data = dev; /* for other methods */
@@ -50,9 +45,7 @@ int aesd_open(struct inode *inode, struct file *filp)
 /* RELEASE METHOD */
 int aesd_release(struct inode *inode, struct file *filp)
 {
-    // PDEBUG("%s\n", __FUNCTION__);
 	PDEBUG("CLOSE\n");
-	
     return 0;
 }
 
@@ -62,47 +55,38 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 {
 	ssize_t retval = 0;
     struct aesd_dev *dev = filp->private_data;
-	int j = dev->CB.tail;
+	int l_tail = dev->CB.tail;	// store CB tail in variable for iteration
 	int i = 0;
 
-    PDEBUG("IN READ\n");
-
+    PDEBUG("READ\n");
 	PDEBUG("dev->size = %ld and f_pos = %lld\n", dev->size, *f_pos);
 
+	// return when there is no more content left to read
 	if (*f_pos >= dev->size)
 		return retval;
 
-	// send device contents
+	// send device file contents
 	for(i=0; i<CB_SIZE; i++)
 	{
-		PDEBUG("j = %d\n", j);
+		PDEBUG("l_tail = %d\n", l_tail);
 		
-		if(dev->CB.data[j] == NULL)
-		{
-			PDEBUG("got null\n");
-			break;
-		}
+		// enters this condition after reading all filled strings (only when buffer is not full)
+		if(dev->CB.data[l_tail] == NULL) { break; }
 
-		// send data to user
-		count = dev->CB.size[j];	
-		if (copy_to_user(buf + *f_pos, dev->CB.data[j], count))
-		{
-			retval = -EFAULT;
-			return retval;
-		}
-		PDEBUG("CB[%d] = %s; size = %d\n", j, dev->CB.data[j], dev->CB.size[j]);
+		// send data to user	
+		if (copy_to_user(buf + *f_pos, dev->CB.data[l_tail], dev->CB.size[l_tail])) { return -EFAULT; }
+		PDEBUG("CB[%d] = %s; size = %d\n", l_tail, dev->CB.data[l_tail], dev->CB.size[l_tail]);
 		
-		*f_pos = *f_pos + count;
-		retval = retval + count;
-
+		// update file offset and retval
+		*f_pos += dev->CB.size[l_tail];
+		retval += dev->CB.size[l_tail];
 		PDEBUG("f_pos = %lld\n", *f_pos);
 
-		j = j + 1;
-		j = j % CB_SIZE;
+		// increment l_tail
+		l_tail = (l_tail + 1) % CB_SIZE;
 	}
 
-	PDEBUG("f_pos = %lld\n", *f_pos);
-
+	PDEBUG("retval = %ld\n", retval);
 	return retval;
 }
 
