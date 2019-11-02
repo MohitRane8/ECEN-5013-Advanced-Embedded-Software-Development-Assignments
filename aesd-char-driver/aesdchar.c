@@ -73,7 +73,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
         retval = -EFAULT;
     }
 
-	PDEBUG("dev->CB.data = %s\n", dev->CB.data);
+	PDEBUG("dev->CB.data = %s\n", dev->CB.data); 
 	PDEBUG("buf = %s\n", buf);
 
 	retval = count;
