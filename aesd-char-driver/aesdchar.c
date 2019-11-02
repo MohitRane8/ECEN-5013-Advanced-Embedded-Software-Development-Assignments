@@ -22,7 +22,6 @@
 #include "aesdchar.h"
 int aesd_major =   0; // use dynamic major
 int aesd_minor =   0;
-int flag = 0;
 
 MODULE_AUTHOR("Mohit Rane"); /** DONE - TODO: fill in your name **/
 MODULE_LICENSE("Dual BSD/GPL");
@@ -36,10 +35,10 @@ int aesd_open(struct inode *inode, struct file *filp)
 {
     struct aesd_dev *dev; /* device information */
     
-    PDEBUG("In %s function\n", __FUNCTION__);
-
-    PDEBUG("Device Major : %d \n", imajor(inode));
-    PDEBUG("Device Minor : %d \n", iminor(inode));
+    // PDEBUG("%s\n", __FUNCTION__);
+	PDEBUG("OPEN\n");
+    // PDEBUG("Device Major : %d \n", imajor(inode));
+    // PDEBUG("Device Minor : %d \n", iminor(inode));
     
     dev = container_of(inode->i_cdev, struct aesd_dev, cdev);
     filp->private_data = dev; /* for other methods */
@@ -50,7 +49,8 @@ int aesd_open(struct inode *inode, struct file *filp)
 /* RELEASE METHOD */
 int aesd_release(struct inode *inode, struct file *filp)
 {
-    PDEBUG("In %s function\n", __FUNCTION__);
+    // PDEBUG("%s\n", __FUNCTION__);
+	PDEBUG("CLOSE\n");
 	
     return 0;
 }
@@ -62,30 +62,27 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	ssize_t retval = 0;
     struct aesd_dev *dev = filp->private_data;
 
-    PDEBUG("In %s function\n", __FUNCTION__);
-    PDEBUG("read %zu bytes with offset %lld\n",count,*f_pos);
+    PDEBUG("READ\n");
+	PDEBUG("dev->CB.data = %s\n", dev->CB.data);
 
-    count = sizeof(dev->CB.data) + 1;
+	if (*f_pos >= dev->size)
+		return retval;
 
-	PDEBUG("sizeof(dev->CB.data) = %ld\n", sizeof(dev->CB.data));
+	// if (*f_pos + count > dev->size)
+	count = dev->size - *f_pos;
 
-    if (copy_to_user(buf, dev->CB.data, count)) {
+    if (copy_to_user(buf, dev->CB.data, count))
+	{
         retval = -EFAULT;
+		return retval;
     }
 
-	PDEBUG("dev->CB.data = %s\n", dev->CB.data); 
-	PDEBUG("buf = %s\n", buf);
+	PDEBUG("read %zu bytes with offset %lld\n",count,*f_pos);
 
+	*f_pos += count;
 	retval = count;
 
-	if(flag == 1)
-	{
-		retval = 0;
-	}
-
-	flag = 1;
-
-    return retval;
+	return retval;
 }
 
 /* WRITE METHOD */
@@ -98,17 +95,19 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     
     retval = count;
 
-    PDEBUG("In %s function\n", __FUNCTION__);
+    PDEBUG("WRITE\n");
     PDEBUG("write %zu bytes with offset %lld\n",count,*f_pos);
-    PDEBUG("Received string: %s\n", buf);
-    PDEBUG("String count:    %ld\n", count);
+    // PDEBUG("Received string: %s\n", buf);
+    // PDEBUG("String count:    %ld\n", count);
 
     dev->CB.data = (char*)kmalloc(count * sizeof(char), GFP_KERNEL);
     
     if (copy_from_user(dev->CB.data, buf, count)) {
         retval = -EFAULT;
     }
-    
+
+	dev->size = count;
+	PDEBUG("Device file size:    %ld\n", dev->size);
     PDEBUG("Malloced and wrote: %s\n", dev->CB.data);
 
     return retval;
@@ -152,10 +151,6 @@ int aesd_init_module(void)
 		return result;
 	}
 	memset(&aesd_device,0,sizeof(struct aesd_dev));
-
-	/**
-	 * TODO: initialize the AESD specific portion of the device
-	 */
 
 	result = aesd_setup_cdev(&aesd_device);
 

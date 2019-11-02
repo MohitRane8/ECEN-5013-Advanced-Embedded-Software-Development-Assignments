@@ -34,7 +34,8 @@ struct CB_struct
 
 struct aesd_dev
 {
-    struct CB_struct CB;
+    unsigned long size;		// size of device file
+	struct CB_struct CB;
 	struct cdev cdev;	  /* Char device structure		*/
 };
 
