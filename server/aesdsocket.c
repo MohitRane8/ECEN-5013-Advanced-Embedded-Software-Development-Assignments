@@ -24,6 +24,10 @@ Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
 #include <stdbool.h>
 #include <time.h>
 
+// use aesdchar device to handle reads and writes
+#define USE_AESD_CHAR_DEVICE    (1)
+#define ENABLE_TIMESTAMPS       (0)
+
 // Port address
 #define PORT 9000
 
@@ -82,6 +86,7 @@ off_t fsize(const char *filename)
     return -1; 
 }
 
+#if ENABLE_TIMESTAMPS
 void* timestamp_function(void* thread_arg)
 {
     char* time_buff;
@@ -114,6 +119,7 @@ void* timestamp_function(void* thread_arg)
 
     // pthread_exit(NULL);
 }
+#endif
 
 void* thread_function(void* thread_arg)
 {
@@ -129,29 +135,61 @@ void* thread_function(void* thread_arg)
     read(threadParam->cli, recvbuff, sizeof(recvbuff));
 
     // open a file descriptor to write message to file
-    int fd1 = open("/var/tmp/aesdsocketdata", O_WRONLY | O_CREAT | O_APPEND, 0644); 
+#if USE_AESD_CHAR_DEVICE
+    int fd1 = open("/dev/aesdchar", O_WRONLY | O_APPEND, 0644);
+#else
+    int fd1 = open("/var/tmp/aesdsocketdata", O_WRONLY | O_CREAT | O_APPEND, 0644);
+#endif
     if (fd1 < 0) 
     {
         perror("r1");
         exit(1);
     }
+#if USE_AESD_CHAR_DEVICE
+#else
     pthread_mutex_lock(&file_lock);
+#endif
+
     write(fd1, recvbuff, (strlen(recvbuff)));
+
+#if USE_AESD_CHAR_DEVICE
+#else
     fsync(fd1);
     pthread_mutex_unlock(&file_lock);
+#endif
+
     close(fd1);
 
     // open a file descriptor to read whole content of file
+#if USE_AESD_CHAR_DEVICE
+    int fd2 = open("/dev/aesdchar", O_RDONLY, 0644);
+#else
     int fd2 = open("/var/tmp/aesdsocketdata", O_RDONLY | O_CREAT, 0644); 
+#endif
+
     if (fd2 < 0) 
     {
         perror("r1");
         exit(1);
     }
+
+#if USE_AESD_CHAR_DEVICE
+#else
     pthread_mutex_lock(&file_lock);
+#endif
+
+#if USE_AESD_CHAR_DEVICE
+    off_t ret = fsize("/dev/aesdchar");
+#else
     off_t ret = fsize("/var/tmp/aesdsocketdata");
+#endif
+
     read(fd2, sendbuff, ret);
+
+#if USE_AESD_CHAR_DEVICE
+#else
     pthread_mutex_unlock(&file_lock);
+#endif
 
     // send buffer data to client
     send(threadParam->cli, sendbuff, strlen(sendbuff), 0);
@@ -218,11 +256,14 @@ int main(int argc, char *argv[])
         return -1; 
     }
 
-    if (pthread_mutex_init(&file_lock, NULL) != 0) 
-    { 
-        printf("\n mutex init has failed\n"); 
-        return -1; 
+#if USE_AESD_CHAR_DEVICE
+#else
+    if (pthread_mutex_init(&file_lock, NULL) != 0)
+    {
+        printf("\n mutex init has failed\n");
+        return -1;
     }
+#endif
 
     // Setting signal handling
     struct sigaction saint;
@@ -312,12 +353,14 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+#if ENABLE_TIMESTAMPS
     // create timestamp thread
     pthread_t timestamp_thread;
     if((rc = pthread_create(&timestamp_thread, NULL, timestamp_function, NULL)) == -1)
     {
         perror("pthread_create for timestamp_thread");
     }
+#endif
 
     while(signal_flag == 0)
     {
@@ -377,13 +420,19 @@ int main(int argc, char *argv[])
     // close(sock);
 
     pthread_mutex_destroy(&ll_lock); 
-    pthread_mutex_destroy(&file_lock); 
+
+#if USE_AESD_CHAR_DEVICE
+#else
+    pthread_mutex_destroy(&file_lock);
+#endif
 
     // remove file where received client data is stored
     system("rm /var/tmp/aesdsocketdata");
     syslog(LOG_CRIT, "Caught signal, exiting");
 
+#if ENABLE_TIMESTAMPS
     // pthread_join(timestamp_thread, NULL);
+#endif
 
     return 0;
 }

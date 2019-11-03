@@ -23,15 +23,16 @@
 #  define PDEBUG(fmt, args...) /* not debugging: nothing */
 #endif
 
+// Circular Buffer Size
 #define CB_SIZE 10
 
+// Circular Buffer Structure
 struct CB_struct
 {
-	int ow_flag;
-	int head;
-	int tail;
+	int head;				/* index for new write in buffer		*/
+	int tail;				/* index for read location				*/
 	int size[CB_SIZE];		/* stores size of each buffer element 	*/
-	char* data[CB_SIZE];	/* stores string						 */
+	char* data[CB_SIZE];	/* stores string						*/
 };
 
 struct aesd_dev
