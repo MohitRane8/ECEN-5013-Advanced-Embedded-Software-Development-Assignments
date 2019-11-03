@@ -19,6 +19,7 @@
 #include <linux/fs.h> 	// file_operations
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/mutex.h>
 #include "aesdchar.h"
 int aesd_major =   0; 	// use dynamic major
 int aesd_minor =   0;
@@ -55,6 +56,10 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 {
 	ssize_t retval = 0;
     struct aesd_dev *dev = filp->private_data;
+
+	if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
+	PDEBUG("MUTEX LOCKED\n");
+
 	int l_tail = dev->CB.tail;	// store CB tail in variable for iteration
 	int i = 0;
 
@@ -63,7 +68,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 
 	// return when there is no more content left to read
 	if (*f_pos >= dev->size)
-		return retval;
+		goto out;
 
 	// send device file contents
 	for(i=0; i<CB_SIZE; i++)
@@ -87,7 +92,11 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	}
 
 	PDEBUG("retval = %ld\n", retval);
-	return retval;
+
+	out:
+		mutex_unlock(&dev->lock);
+		PDEBUG("MUTEX UNLOCKED\n");
+		return retval;
 }
 
 /* WRITE METHOD */
@@ -98,6 +107,9 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     ssize_t retval = -ENOMEM;
 	int i = 0;
     retval = count;
+
+	if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
+	PDEBUG("MUTEX LOCKED\n");
 
     PDEBUG("WRITE\n");
     PDEBUG("write %zu bytes with offset %lld\n",count,*f_pos);
@@ -141,6 +153,9 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 		dev->size = dev->size + dev->CB.size[i];
 	PDEBUG("dev size: %ld\n", dev->size);
 
+	mutex_unlock(&dev->lock);
+	PDEBUG("MUTEX UNLOCKED\n");
+
     return retval;
 }
 
@@ -181,6 +196,9 @@ int aesd_init_module(void)
 		printk(KERN_WARNING "Can't get major %d\n", aesd_major);
 		return result;
 	}
+
+	mutex_init(&aesd_device.lock);
+
 	memset(&aesd_device,0,sizeof(struct aesd_dev));
 
 	result = aesd_setup_cdev(&aesd_device);

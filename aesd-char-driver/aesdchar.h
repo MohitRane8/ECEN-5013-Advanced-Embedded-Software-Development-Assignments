@@ -39,6 +39,7 @@ struct aesd_dev
 {
     unsigned long size;		// size of device file
 	struct CB_struct CB;
+	struct mutex lock;
 	struct cdev cdev;	  /* Char device structure		*/
 };
 
