@@ -33,7 +33,6 @@ struct aesd_dev aesd_device;
 /* OPEN METHOD */
 int aesd_open(struct inode *inode, struct file *filp)
 {
-<<<<<<< HEAD
     struct aesd_dev *dev; /* device information */
     
 	PDEBUG("OPEN\n");
@@ -42,28 +41,13 @@ int aesd_open(struct inode *inode, struct file *filp)
     filp->private_data = dev; /* for other methods */
 
     return 0;
-=======
-	PDEBUG("open");
-	/**
-	 * TODO: handle open
-	 */
-	return 0;
->>>>>>> aesd-assignments/assignment9
 }
 
 /* RELEASE METHOD */
 int aesd_release(struct inode *inode, struct file *filp)
 {
-<<<<<<< HEAD
 	PDEBUG("CLOSE\n");
     return 0;
-=======
-	PDEBUG("release");
-	/**
-	 * TODO: handle release
-	 */
-	return 0;
->>>>>>> aesd-assignments/assignment9
 }
 
 /* READ METHOD */
@@ -71,7 +55,6 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
                 loff_t *f_pos)
 {
 	ssize_t retval = 0;
-<<<<<<< HEAD
     struct aesd_dev *dev = filp->private_data;
 
 	if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
@@ -114,20 +97,12 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 		mutex_unlock(&dev->lock);
 		PDEBUG("MUTEX UNLOCKED\n");
 		return retval;
-=======
-	PDEBUG("read %zu bytes with offset %lld",count,*f_pos);
-	/**
-	 * TODO: handle read
-	 */
-	return retval;
->>>>>>> aesd-assignments/assignment9
 }
 
 /* WRITE METHOD */
 ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
                 loff_t *f_pos)
 {
-<<<<<<< HEAD
 	struct aesd_dev *dev = filp->private_data;
     ssize_t retval = -ENOMEM;
 	int i = 0;
@@ -182,14 +157,6 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	PDEBUG("MUTEX UNLOCKED\n");
 
     return retval;
-=======
-	ssize_t retval = -ENOMEM;
-	PDEBUG("write %zu bytes with offset %lld",count,*f_pos);
-	/**
-	 * TODO: handle write
-	 */
-	return retval;
->>>>>>> aesd-assignments/assignment9
 }
 
 /* file operations structure for character driver */
