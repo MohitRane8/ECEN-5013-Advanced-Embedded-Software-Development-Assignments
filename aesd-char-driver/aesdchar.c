@@ -21,6 +21,7 @@
 #include <linux/uaccess.h>
 #include <linux/mutex.h>
 #include "aesdchar.h"
+#include "aesd_ioctl.h"
 int aesd_major =   0; 	// use dynamic major
 int aesd_minor =   0;
 int n_flag = 1;			// new line flag
@@ -50,6 +51,34 @@ int aesd_release(struct inode *inode, struct file *filp)
     return 0;
 }
 
+/* IOCTL METHOD */
+int aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	// TODO: remove if not required
+	// int err = 0, tmp;
+	int retval = 0;
+
+	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
+	if (_IOC_NR(cmd) > AESDCHAR_IOC_MAXNR) return -ENOTTY;
+
+	// if (_IOC_DIR(cmd) & _IOC_READ)
+	// 	err = !access_ok_wrapper(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	// else if (_IOC_DIR(cmd) & _IOC_WRITE)
+	// 	err = !access_ok_wrapper(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	// if (err) return -EFAULT;
+
+	switch(cmd) {
+	  case AESDCHAR_IOCSEEKTO:
+		// TODO
+		break;
+
+	  default:
+		return -ENOTTY;
+	}
+
+	return retval;
+}
+
 /* READ METHOD */
 ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
                 loff_t *f_pos)
@@ -60,6 +89,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
 	PDEBUG("MUTEX LOCKED\n");
 
+#if 0
 	int l_tail = dev->CB.tail;	// store CB tail in variable for iteration
 	int i = 0;
 
@@ -90,7 +120,60 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 		// increment l_tail
 		l_tail = (l_tail + 1) % CB_SIZE;
 	}
+#else
+	// store seeked position in local variable
+	loff_t l_pos = *f_pos;
+	loff_t s_pos = l_pos;
+	loff_t b_pos = 0;		// for buffer space position, actual content returned
+	int i = 0;
+	int j = 0;
+	int k = 0;
+	int size= 0;
+	char* temp_buff = NULL;
 
+    PDEBUG("READ\n");
+	PDEBUG("dev->size = %ld and f_pos = %lld\n", dev->size, *f_pos);
+
+	// return when there is no more content left to read
+	if (b_pos >= (dev->size - l_pos))
+		goto out;
+
+	// when this loop breaks, i corresponds to the buffer with current f_pos
+	for(i=0; i<CB_SIZE; i++)
+	{
+		size = size + dev->CB.size[i];
+		if(l_pos <= (size-1)) { break; }
+	}
+
+	// allocate temporary buffer to store seeked buffer
+	temp_buff = (char*)kmalloc(((size - l_pos) * sizeof(char)), GFP_KERNEL);
+	for(j=0; j<(size - l_pos); j++)
+	{
+		temp_buff[j] = dev->CB.data[i][s_pos];
+		s_pos++;
+	}
+	// send temporary buffer to user space
+	if (copy_to_user(buf, temp_buff, (size - l_pos))) { return -EFAULT; }
+	b_pos += (size - l_pos);
+	// retval = b_pos;
+	kfree(temp_buff);
+
+	// send other device file contents
+	for(k=(i+1); k<CB_SIZE; k++)
+	{		
+		// 
+		if(dev->CB.data[k] == NULL) { break; }
+
+		// send data to user	
+		if (copy_to_user(buf + b_pos, dev->CB.data[k], dev->CB.size[k])) { return -EFAULT; }
+		
+		// update file offset and retval
+		b_pos += dev->CB.size[k];
+		// retval = b_pos;
+	}
+#endif
+
+	retval = b_pos;
 	PDEBUG("retval = %ld\n", retval);
 
 	out:
@@ -159,11 +242,45 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     return retval;
 }
 
+/* LLSEEK METHOD */
+// method taken from scull llseek
+loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
+{
+	struct aesd_dev *dev = filp->private_data;
+	loff_t newpos;
+
+	switch(whence)
+	{
+		case 0: /* SEEK_SET */
+			newpos = off;
+			break;
+
+		case 1: /* SEEK_CUR */
+			newpos = filp->f_pos + off;
+			break;
+
+		case 2: /* SEEK_END */
+			newpos = dev->size + off;
+			break;
+
+		default: /* can't happen */
+			return -EINVAL;
+	}
+	if (newpos < 0) return -EINVAL;
+
+	filp->f_pos = newpos;
+	
+	return newpos;
+}
+
+
 /* file operations structure for character driver */
 struct file_operations aesd_fops = {
 	.owner =    THIS_MODULE,
+	.llseek =   aesd_llseek,
 	.read =     aesd_read,
 	.write =    aesd_write,
+	// .ioctl =	aesd_ioctl,
 	.open =     aesd_open,
 	.release =  aesd_release,
 };
