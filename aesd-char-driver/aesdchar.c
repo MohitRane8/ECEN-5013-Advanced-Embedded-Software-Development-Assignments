@@ -52,56 +52,56 @@ int aesd_release(struct inode *inode, struct file *filp)
 }
 
 /* IOCTL METHOD */
-long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-{
-	// TODO: remove if not required
-	// int err = 0, tmp;
-	int retval = 0;
-	int i = 0;
-	int size = 0;
-	loff_t newpos;
-	struct aesd_seekto local_seekto;
+// long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+// {
+// 	// TODO: remove if not required
+// 	// int err = 0, tmp;
+// 	int retval = 0;
+// 	int i = 0;
+// 	int size = 0;
+// 	loff_t newpos;
+// 	struct aesd_seekto local_seekto;
 
-	struct aesd_dev *dev = filp->private_data;
+// 	struct aesd_dev *dev = filp->private_data;
 
-	if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
-	PDEBUG("MUTEX LOCKED\n");
-	PDEBUG("IOCTL\n");
+// 	if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
+// 	PDEBUG("MUTEX LOCKED\n");
+// 	PDEBUG("IOCTL\n");
 
-	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
-	if (_IOC_NR(cmd) > AESDCHAR_IOC_MAXNR) return -ENOTTY;
+// 	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
+// 	if (_IOC_NR(cmd) > AESDCHAR_IOC_MAXNR) return -ENOTTY;
 
-	switch(cmd) {
-	  case AESDCHAR_IOCSEEKTO:
-		copy_from_user(&local_seekto, (struct aesd_seekto*)arg, sizeof(struct aesd_seekto));
-		local_seekto.write_cmd = 0;
-		local_seekto.write_cmd_offset = 2;
-		PDEBUG("write_cmd = %d\n", local_seekto.write_cmd);
-		PDEBUG("write_cmd_offset = %d\n", local_seekto.write_cmd_offset);
+// 	switch(cmd) {
+// 	  case AESDCHAR_IOCSEEKTO:
+// 		copy_from_user(&local_seekto, (struct aesd_seekto*)arg, sizeof(struct aesd_seekto));
+// 		local_seekto.write_cmd = 0;
+// 		local_seekto.write_cmd_offset = 2;
+// 		PDEBUG("write_cmd = %d\n", local_seekto.write_cmd);
+// 		PDEBUG("write_cmd_offset = %d\n", local_seekto.write_cmd_offset);
 
-		// seek
-		for(i=0; i<local_seekto.write_cmd; i++)
-		{
-			size += dev->CB.size[i];
-		}
-		// filp->f_pos = (loff_t)(size - 1 + local_seekto.write_cmd_offset);
+// 		// seek
+// 		for(i=0; i<local_seekto.write_cmd; i++)
+// 		{
+// 			size += dev->CB.size[i];
+// 		}
+// 		// filp->f_pos = (loff_t)(size - 1 + local_seekto.write_cmd_offset);
 
-		PDEBUG("f_pos bef = %lld\n", filp->f_pos);
-		newpos = 2;
-		filp->f_pos = filp->f_pos + newpos;
-		PDEBUG("f_pos aft = %lld\n", filp->f_pos);
-		break;
+// 		PDEBUG("f_pos bef = %lld\n", filp->f_pos);
+// 		newpos = 2;
+// 		filp->f_pos = filp->f_pos + newpos;
+// 		PDEBUG("f_pos aft = %lld\n", filp->f_pos);
+// 		break;
 
-	  default:
-		retval = -ENOTTY;
-		goto out;
-	}
+// 	  default:
+// 		retval = -ENOTTY;
+// 		goto out;
+// 	}
 
-	out:
-		mutex_unlock(&dev->lock);
-		PDEBUG("MUTEX UNLOCKED\n");
-		return retval;
-}
+// 	out:
+// 		mutex_unlock(&dev->lock);
+// 		PDEBUG("MUTEX UNLOCKED\n");
+// 		return retval;
+// }
 
 /* READ METHOD */
 ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
@@ -312,7 +312,7 @@ struct file_operations aesd_fops = {
 	.llseek =   aesd_llseek,
 	.read =     aesd_read,
 	.write =    aesd_write,
-	.unlocked_ioctl  =	aesd_ioctl,
+	// .unlocked_ioctl  =	aesd_ioctl,
 	.open =     aesd_open,
 	.release =  aesd_release,
 };
