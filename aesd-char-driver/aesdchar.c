@@ -55,8 +55,6 @@ int aesd_release(struct inode *inode, struct file *filp)
 /* IOCTL METHOD */
 long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	// TODO: remove if not required
-	// int err = 0, tmp;
 	int retval = 0;
 	int i = 0;
 	int size = 0;
@@ -298,7 +296,6 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 			break;
 
 		case 1: /* SEEK_CUR */
-			// TODO: add mutex?
 			newpos = filp->f_pos + off;
 			break;
 
