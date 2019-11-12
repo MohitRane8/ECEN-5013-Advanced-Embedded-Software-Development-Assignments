@@ -128,30 +128,37 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	int i = 0;
 	int j = 0;
 	int k = 0;
-	int size= 0;
-	char* temp_buff = NULL;
+	int size = 0;
+	int prev_size = 0;
+	char* temp_buff;
 
     PDEBUG("READ\n");
 	PDEBUG("dev->size = %ld and f_pos = %lld\n", dev->size, *f_pos);
 
 	// return when there is no more content left to read
-	if (b_pos >= (dev->size - l_pos))
+	if (*f_pos >= dev->size)
+	{
+		*f_pos = 0;
 		goto out;
+	}
 
 	// when this loop breaks, i corresponds to the buffer with current f_pos
 	for(i=0; i<CB_SIZE; i++)
 	{
 		size = size + dev->CB.size[i];
 		if(l_pos <= (size-1)) { break; }
+		prev_size = size;
 	}
 
 	// allocate temporary buffer to store seeked buffer
 	temp_buff = (char*)kmalloc(((size - l_pos) * sizeof(char)), GFP_KERNEL);
 	for(j=0; j<(size - l_pos); j++)
 	{
-		temp_buff[j] = dev->CB.data[i][s_pos];
+		temp_buff[j] = dev->CB.data[i][s_pos - prev_size];
 		s_pos++;
 	}
+	PDEBUG("tempbuff = %s\n", temp_buff);
+	PDEBUG("CB.data  = %s\n", dev->CB.data[i]);
 	// send temporary buffer to user space
 	if (copy_to_user(buf, temp_buff, (size - l_pos))) { return -EFAULT; }
 	b_pos += (size - l_pos);
@@ -173,6 +180,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	}
 #endif
 
+	*f_pos = *f_pos + b_pos;
 	retval = b_pos;
 	PDEBUG("retval = %ld\n", retval);
 
