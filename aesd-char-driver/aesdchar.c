@@ -30,6 +30,7 @@ MODULE_AUTHOR("Mohit Rane");
 MODULE_LICENSE("Dual BSD/GPL");
 
 struct aesd_dev aesd_device;
+loff_t aesd_llseek(struct file *filp, loff_t off, int whence);
 
 /* OPEN METHOD */
 int aesd_open(struct inode *inode, struct file *filp)
@@ -60,6 +61,7 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	int i = 0;
 	int size = 0;
 	loff_t newpos;
+	int res;
 	struct aesd_seekto local_seekto;
 
 	struct aesd_dev *dev = filp->private_data;
@@ -81,11 +83,11 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		for(i=0; i<local_seekto.write_cmd; i++)
 		{
 			size += dev->CB.size[i];
-		}
+		}		
+		newpos = (loff_t)(size + local_seekto.write_cmd_offset);
 
-		PDEBUG("f_pos bef = %lld\n", filp->f_pos);
-			filp->f_pos = (loff_t)(size + local_seekto.write_cmd_offset);
-		PDEBUG("f_pos aft = %lld\n", filp->f_pos);
+		res = aesd_llseek(filp, newpos, 0);
+		PDEBUG("res = %d\n", res);
 		break;
 
 	  default:
@@ -96,6 +98,9 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	out:
 		mutex_unlock(&dev->lock);
 		PDEBUG("MUTEX UNLOCKED\n");
+		// PDEBUG("f_pos bef = %lld\n", filp->f_pos);
+		// filp->f_pos = newpos;
+		// PDEBUG("f_pos aft = %lld\n", filp->f_pos);
 		return retval;
 }
 
@@ -298,6 +303,7 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 	if (newpos < 0) return -EINVAL;
 
 	filp->f_pos = newpos;
+	PDEBUG("[LLSEEK] fpos = %lld\n", filp->f_pos);
 	
 	return newpos;
 }
