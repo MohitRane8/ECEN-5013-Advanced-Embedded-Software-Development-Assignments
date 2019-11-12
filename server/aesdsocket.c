@@ -188,8 +188,8 @@ void* thread_function(void* thread_arg)
         write_cmd_offset_str[k] = '\0';
 
         // convert from ascii to integer and store in aesd_seekto struct
-        local_seekto.write_cmd = atoi(write_cmd_str);
-        local_seekto.write_cmd_offset = atoi(write_cmd_offset_str);
+        local_seekto.write_cmd = (uint32_t)atoi(write_cmd_str);
+        local_seekto.write_cmd_offset = (uint32_t)atoi(write_cmd_offset_str);
 
         syslog(LOG_DEBUG, "local_seekto.write_cmd = %d\n", local_seekto.write_cmd);
         syslog(LOG_DEBUG, "local_seekto.write_cmd_offset = %d\n", local_seekto.write_cmd_offset);
