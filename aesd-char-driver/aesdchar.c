@@ -21,7 +21,7 @@
 #include <linux/uaccess.h>
 #include <linux/mutex.h>
 #include "aesdchar.h"
-#include "aesd_ioctl.h"
+#include "../aesd_ioctl.h"
 int aesd_major =   0; 	// use dynamic major
 int aesd_minor =   0;
 int n_flag = 1;			// new line flag
@@ -52,31 +52,55 @@ int aesd_release(struct inode *inode, struct file *filp)
 }
 
 /* IOCTL METHOD */
-int aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	// TODO: remove if not required
 	// int err = 0, tmp;
 	int retval = 0;
+	int i = 0;
+	int size = 0;
+	loff_t newpos;
+	struct aesd_seekto local_seekto;
+
+	struct aesd_dev *dev = filp->private_data;
+
+	if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
+	PDEBUG("MUTEX LOCKED\n");
+	PDEBUG("IOCTL\n");
 
 	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
 	if (_IOC_NR(cmd) > AESDCHAR_IOC_MAXNR) return -ENOTTY;
 
-	// if (_IOC_DIR(cmd) & _IOC_READ)
-	// 	err = !access_ok_wrapper(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
-	// else if (_IOC_DIR(cmd) & _IOC_WRITE)
-	// 	err = !access_ok_wrapper(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
-	// if (err) return -EFAULT;
-
 	switch(cmd) {
 	  case AESDCHAR_IOCSEEKTO:
-		// TODO
+		copy_from_user(&local_seekto, (struct aesd_seekto*)arg, sizeof(struct aesd_seekto));
+		local_seekto.write_cmd = 0;
+		local_seekto.write_cmd_offset = 2;
+		PDEBUG("write_cmd = %d\n", local_seekto.write_cmd);
+		PDEBUG("write_cmd_offset = %d\n", local_seekto.write_cmd_offset);
+
+		// seek
+		for(i=0; i<local_seekto.write_cmd; i++)
+		{
+			size += dev->CB.size[i];
+		}
+		// filp->f_pos = (loff_t)(size - 1 + local_seekto.write_cmd_offset);
+
+		PDEBUG("f_pos bef = %lld\n", filp->f_pos);
+		newpos = 2;
+		filp->f_pos = filp->f_pos + newpos;
+		PDEBUG("f_pos aft = %lld\n", filp->f_pos);
 		break;
 
 	  default:
-		return -ENOTTY;
+		retval = -ENOTTY;
+		goto out;
 	}
 
-	return retval;
+	out:
+		mutex_unlock(&dev->lock);
+		PDEBUG("MUTEX UNLOCKED\n");
+		return retval;
 }
 
 /* READ METHOD */
@@ -93,7 +117,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	int l_tail = dev->CB.tail;	// store CB tail in variable for iteration
 	int i = 0;
 
-    PDEBUG("READ\n");
+	PDEBUG("READ\n");
 	PDEBUG("dev->size = %ld and f_pos = %lld\n", dev->size, *f_pos);
 
 	// return when there is no more content left to read
@@ -158,7 +182,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 		s_pos++;
 	}
 	PDEBUG("tempbuff = %s\n", temp_buff);
-	PDEBUG("CB.data  = %s\n", dev->CB.data[i]);
+	// PDEBUG("CB.data  = %s\n", dev->CB.data[i]);
 	// send temporary buffer to user space
 	if (copy_to_user(buf, temp_buff, (size - l_pos))) { return -EFAULT; }
 	b_pos += (size - l_pos);
@@ -228,7 +252,6 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 		dev->CB.size[dev->CB.head] = dev->CB.size[dev->CB.head] + count;
 	}
 	PDEBUG("CB[%d]	: %s\n", dev->CB.head, dev->CB.data[dev->CB.head]);
-	PDEBUG("size  	: %d\n", dev->CB.size[dev->CB.head]);
 
 	// set new line flag if last character of received string is \n
 	n_flag = (*(dev->CB.data[dev->CB.head] + dev->CB.size[dev->CB.head] - 1) == '\n') ? 1 : 0;
@@ -264,6 +287,7 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 			break;
 
 		case 1: /* SEEK_CUR */
+			// TODO: add mutex?
 			newpos = filp->f_pos + off;
 			break;
 
@@ -288,7 +312,7 @@ struct file_operations aesd_fops = {
 	.llseek =   aesd_llseek,
 	.read =     aesd_read,
 	.write =    aesd_write,
-	// .ioctl =	aesd_ioctl,
+	.unlocked_ioctl  =	aesd_ioctl,
 	.open =     aesd_open,
 	.release =  aesd_release,
 };

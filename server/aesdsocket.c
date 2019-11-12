@@ -23,6 +23,7 @@ Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
 #include <pthread.h>
 #include <stdbool.h>
 #include <time.h>
+#include "../aesd_ioctl.h"
 
 // use aesdchar device to handle reads and writes
 #define USE_AESD_CHAR_DEVICE    (1)
@@ -33,6 +34,8 @@ Daemons: http://www2.lawrence.edu/fast/GREGGJ/CMSC480/Daemons.html
 
 // buffer size
 #define MAX 200
+
+struct aesd_seekto local_seekto;
 
 pthread_mutex_t ll_lock;
 pthread_mutex_t file_lock;
@@ -128,11 +131,19 @@ void* thread_function(void* thread_arg)
 
     char recvbuff[MAX];
     char *sendbuff = (char *)calloc(1000, sizeof(char));
+    int ioctl_flag = 0;
+    char* ioctl_string = "AESDCHAR_IOCSEEKTO:";
+    int ioctl_string_size = strlen(ioctl_string);
+    int write_cmd_str_size = 0;
     
     // SEND/RECV
     // read client message
     bzero(recvbuff, MAX);
     read(threadParam->cli, recvbuff, sizeof(recvbuff));
+
+    // check if received string corresponds to ioctl command
+    // ioctl string: "AESDCHAR_IOCSEEKTO:X,Y"
+    ioctl_flag = (strncmp(recvbuff, ioctl_string, ioctl_string_size) == 0) ? 1 : 0;
 
     // open a file descriptor to write message to file
 #if USE_AESD_CHAR_DEVICE
@@ -150,7 +161,47 @@ void* thread_function(void* thread_arg)
     pthread_mutex_lock(&file_lock);
 #endif
 
-    write(fd1, recvbuff, (strlen(recvbuff)));
+    if(ioctl_flag == 1)
+    {
+        // parse ioctl args and store in aesd_seekto struct
+        // write_cmd & write_cmd_offset
+        char write_cmd_str[4];
+        char write_cmd_offset_str[4];
+        int write_cmd = 0;
+        int write_cmd_offset = 0;
+
+        int k = 0;
+        while(recvbuff[ioctl_string_size + k] != ',')
+        {
+            write_cmd_str[k] = recvbuff[ioctl_string_size + k];
+            k++;
+        }
+        write_cmd_str[k] = '\0';
+        write_cmd_str_size = strlen(write_cmd_str);
+
+        k = 0;
+        while(recvbuff[ioctl_string_size + write_cmd_str_size + 1 + k] != '\0')
+        {
+            write_cmd_offset_str[k] = recvbuff[ioctl_string_size + write_cmd_str_size + 1 + k];
+            k++;
+        }
+        write_cmd_offset_str[k] = '\0';
+
+        // convert from ascii to integer and store in aesd_seekto struct
+        local_seekto.write_cmd = atoi(write_cmd_str);
+        local_seekto.write_cmd_offset = atoi(write_cmd_offset_str);
+
+        syslog(LOG_DEBUG, "local_seekto.write_cmd = %d\n", local_seekto.write_cmd);
+        syslog(LOG_DEBUG, "local_seekto.write_cmd_offset = %d\n", local_seekto.write_cmd_offset);
+
+        // send ioctl command
+        ioctl(fd1, AESDCHAR_IOCSEEKTO, &local_seekto);
+        // ioctl_flag = 0;
+    }
+    else
+    {
+        write(fd1, recvbuff, (strlen(recvbuff)));
+    }
 
 #if USE_AESD_CHAR_DEVICE
 #else
