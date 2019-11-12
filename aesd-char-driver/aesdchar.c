@@ -66,8 +66,8 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	struct aesd_dev *dev = filp->private_data;
 
-	if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
-	PDEBUG("MUTEX LOCKED\n");
+	// if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
+	// PDEBUG("MUTEX LOCKED\n");
 	PDEBUG("IOCTL\n");
 
 	if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
@@ -78,7 +78,6 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		copy_from_user(&local_seekto, (const void __user*)arg, sizeof(local_seekto));
 		PDEBUG("write_cmd = %u\n", local_seekto.write_cmd);
 		PDEBUG("write_cmd_offset = %u\n", local_seekto.write_cmd_offset);
-
 		// seek
 		for(i=0; i<local_seekto.write_cmd; i++)
 		{
@@ -86,8 +85,11 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		}		
 		newpos = (loff_t)(size + local_seekto.write_cmd_offset);
 
-		res = aesd_llseek(filp, newpos, 0);
-		PDEBUG("res = %d\n", res);
+		// res = aesd_llseek(filp, newpos, 0);
+		PDEBUG("newpos = %lld\n", newpos);
+
+		filp->f_pos = newpos;
+		PDEBUG("f_pos = %lld\n", filp->f_pos);
 		break;
 
 	  default:
@@ -96,11 +98,8 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	}
 
 	out:
-		mutex_unlock(&dev->lock);
-		PDEBUG("MUTEX UNLOCKED\n");
-		// PDEBUG("f_pos bef = %lld\n", filp->f_pos);
-		// filp->f_pos = newpos;
-		// PDEBUG("f_pos aft = %lld\n", filp->f_pos);
+		// mutex_unlock(&dev->lock);
+		// PDEBUG("MUTEX UNLOCKED\n");
 		return retval;
 }
 
@@ -281,6 +280,8 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 {
 	struct aesd_dev *dev = filp->private_data;
 	loff_t newpos;
+	if(mutex_lock_interruptible(&dev->lock)) { return -ERESTARTSYS; }
+	PDEBUG("MUTEX LOCKED\n");
 
 	switch(whence)
 	{
@@ -305,6 +306,8 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 	filp->f_pos = newpos;
 	PDEBUG("[LLSEEK] fpos = %lld\n", filp->f_pos);
 	
+	mutex_unlock(&dev->lock);
+	PDEBUG("MUTEX UNLOCKED\n");
 	return newpos;
 }
 
@@ -366,12 +369,15 @@ int aesd_init_module(void)
 void aesd_cleanup_module(void)
 {
 	dev_t devno = MKDEV(aesd_major, aesd_minor);
+	int i;
 
 	cdev_del(&aesd_device.cdev);
-
-	/**
-	 * TODO: cleanup AESD specific poritions here as necessary
-	 */
+	
+	for(i=0; i<CB_SIZE; i++)
+	{
+		if(aesd_device.CB.data[i] != NULL)
+			kfree(aesd_device.CB.data[i]);
+	}
 
 	unregister_chrdev_region(devno, 1);
 }

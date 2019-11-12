@@ -147,7 +147,7 @@ void* thread_function(void* thread_arg)
 
     // open a file descriptor to write message to file
 #if USE_AESD_CHAR_DEVICE
-    int fd1 = open("/dev/aesdchar", O_WRONLY | O_APPEND, 0644);
+    int fd1 = open("/dev/aesdchar", O_RDWR | O_APPEND, 0644);
 #else
     int fd1 = open("/var/tmp/aesdsocketdata", O_WRONLY | O_CREAT | O_APPEND, 0644);
 #endif
@@ -209,20 +209,20 @@ void* thread_function(void* thread_arg)
     pthread_mutex_unlock(&file_lock);
 #endif
 
-    close(fd1);
+    //close(fd1);
 
     // open a file descriptor to read whole content of file
 #if USE_AESD_CHAR_DEVICE
-    int fd2 = open("/dev/aesdchar", O_RDONLY, 0644);
+    //int fd2 = open("/dev/aesdchar", O_RDONLY, 0644);
 #else
-    int fd2 = open("/var/tmp/aesdsocketdata", O_RDONLY | O_CREAT, 0644); 
+    //int fd2 = open("/var/tmp/aesdsocketdata", O_RDONLY | O_CREAT, 0644); 
 #endif
 
-    if (fd2 < 0) 
-    {
-        perror("r1");
-        exit(1);
-    }
+    //if (fd2 < 0) 
+    //{
+      //  perror("r1");
+        //exit(1);
+    //}
 
 #if USE_AESD_CHAR_DEVICE
 #else
@@ -230,12 +230,19 @@ void* thread_function(void* thread_arg)
 #endif
 
 #if USE_AESD_CHAR_DEVICE
-    off_t ret = fsize("/dev/aesdchar");
+    off_t curr_pos = lseek(fd1, (off_t)0, SEEK_CUR);
+    syslog(LOG_INFO, "CURR_POS = %ld\n", curr_pos);
+
+    off_t ret = lseek(fd1, (off_t)0, SEEK_END);
+
+    lseek(fd1, (off_t)curr_pos, SEEK_SET);
+    // off_t ret = fsize("/dev/aesdchar");
+    syslog(LOG_INFO, "file size = %ld\n", ret);
 #else
     off_t ret = fsize("/var/tmp/aesdsocketdata");
 #endif
 
-    read(fd2, sendbuff, ret);
+    read(fd1, sendbuff, ret);
 
 #if USE_AESD_CHAR_DEVICE
 #else
@@ -244,7 +251,7 @@ void* thread_function(void* thread_arg)
 
     // send buffer data to client
     send(threadParam->cli, sendbuff, strlen(sendbuff), 0);
-    close(fd2);
+    close(fd1);
 
     free(sendbuff);
 
