@@ -63,6 +63,7 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	loff_t newpos;
 	int res;
 	struct aesd_seekto local_seekto;
+	int count;
 
 	struct aesd_dev *dev = filp->private_data;
 
@@ -78,11 +79,18 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		copy_from_user(&local_seekto, (const void __user*)arg, sizeof(local_seekto));
 		PDEBUG("write_cmd = %u\n", local_seekto.write_cmd);
 		PDEBUG("write_cmd_offset = %u\n", local_seekto.write_cmd_offset);
+		for(i=0; i<CB_SIZE; i++)
+		{
+			if(dev->CB.data[i] != NULL) { count++; }
+			else { break; }
+		}
+		if(local_seekto.write_cmd >= count) { PDEBUG("Offset too big\n"); break; }
+		if(local_seekto.write_cmd_offset >= dev->CB.size[local_seekto.write_cmd]) { PDEBUG("Offset too big\n"); break; }
 		// seek
 		for(i=0; i<local_seekto.write_cmd; i++)
 		{
 			size += dev->CB.size[i];
-		}		
+		}				
 		newpos = (loff_t)(size + local_seekto.write_cmd_offset);
 
 		// res = aesd_llseek(filp, newpos, 0);
