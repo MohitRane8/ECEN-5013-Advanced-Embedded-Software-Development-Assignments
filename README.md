@@ -8,6 +8,7 @@ This repo contains source code and scripts for AESD assignment 9
 - The data sent to the character device is managed in a circular buffer whose size can be set using a macro.
 - A client can send an ioctl command to the socket server which in turn verifies the command and is executed by the character driver. The values passed into the ioctl command indicates the offset from which the stored data is required by the client. The driver processes the ioctl command and seeks to that offset and returns the data from that offset to the server upon read call.
 - Appropriate locking mechanisms are implemented in socket server and character driver to protect shared resources.
+- Signal handling is implemented in the socket server program for graceful termination (takes care of the ongoing client connections and then closes the server).
 
 Verified communication with Ubuntu client and cross-compiled server running on QEMU image built using Buildroot.
 
